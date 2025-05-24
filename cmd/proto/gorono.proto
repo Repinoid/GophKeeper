@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package gorono;
+
+option go_package = "gorono/proto";
+
+// Metric - нужен всего один метод по записи слайса метрик 
+service Metric {
+  rpc AddBunch(Bunch) returns (BunchResponse);
+}
+// Metr - а-ля структура метрики
+message  Metr  {
+	string  ID      = 1; 
+	string  MType   = 2;    
+	int64   Delta   = 3;
+	double  Value   = 4;
+}
+// слайс метрик
+message Bunch {
+    repeated Metr Meters = 1;
+}
+
+message BunchResponse {
+  string error = 1; // ошибка
+  string outData = 2;
+}

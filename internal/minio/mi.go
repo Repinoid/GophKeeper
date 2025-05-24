@@ -1,0 +1,27 @@
+package main
+
+import "go.uber.org/zap"
+
+//var minioClient *minio.Client
+
+var (
+	key   = []byte("conclave")
+	Sugar zap.SugaredLogger
+)
+
+//var key = []byte("")
+
+func initMinio() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	Sugar = *logger.Sugar()
+
+}
+
+func main() {
+	initMinio()
+
+}
