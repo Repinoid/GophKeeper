@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package gorsovet;
+
+option go_package = "gorsovet/proto";
+
+// 
+service gkeeper {
+  rpc Register (RegisterRequest) returns (RegisterResponse) {}
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  string metadata = 3;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+  string message = 2;
+  bool success = 3;
+}
+
+

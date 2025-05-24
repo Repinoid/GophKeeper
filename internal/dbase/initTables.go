@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	//	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
+
+	"gorsovet/internal/privacy"
+
 )
 
 type DBstruct struct {
@@ -85,7 +87,7 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 		return err
 	}
 	// кодируем ключ бакета мастер-ключом
-	codedBucketkey, err := EncryptB2B(bucketKey, MasterKey)
+	codedBucketkey, err := privacy.EncryptB2B(bucketKey, MasterKey)
 	if err != nil {
 		return err
 	}
