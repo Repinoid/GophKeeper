@@ -1,4 +1,4 @@
-package main
+package minio
 
 import (
 	"bytes"
@@ -10,6 +10,9 @@ import (
 	"io"
 	"math/big"
 	"os"
+
+	"gorsovet/internal/models"
+	"gorsovet/internal/privacy"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
@@ -97,7 +100,7 @@ func (suite *TstS3) Test03WriteReadBytes() {
 	fileContent, err := os.ReadFile(testFileName)
 	suite.Require().NoError(err)
 	// encrypt "filePath" file
-	encrypted, err := EncryptB2B(fileContent, key)
+	encrypted, err := privacy.EncryptB2B(fileContent, models.CryptoKey)
 	suite.Require().NoError(err)
 
 	_, err = suite.minioClient.PutObject(
@@ -194,10 +197,10 @@ func (suite *TstS3) Test05Removes() {
 func (suite *TstS3) Test06Crypta() {
 	testingString := "\t бывало он ещё в постеле ... © \n"
 
-	coded, err := EncryptB2B([]byte(testingString), key)
+	coded, err := privacy.EncryptB2B([]byte(testingString), models.CryptoKey)
 	suite.Require().NoError(err)
 
-	telo, err := DecryptB2B(coded, key)
+	telo, err := privacy.DecryptB2B(coded, models.CryptoKey)
 	suite.Require().NoError(err)
 
 	suite.Require().Equal(testingString, string(telo))
@@ -216,8 +219,8 @@ func (suite *TstS3) Test07ListObjectsInBucket() {
 		nBig, err := rand.Int(rand.Reader, big.NewInt(11111))
 		suite.Require().NoError(err)
 		fSize := nBig.Int64()
-		// random data 
-		data := make([]byte, fSize) 
+		// random data
+		data := make([]byte, fSize)
 		n, err := rand.Read(data)
 		suite.Require().NoError(err)
 		suite.Require().Equal(int64(n), fSize)

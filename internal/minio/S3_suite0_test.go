@@ -1,8 +1,9 @@
-package main
+package minio
 
 import (
 	"context"
 	"crypto/rand"
+	"gorsovet/internal/models"
 	"log"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 		panic("cannot initialize zap")
 	}
 	defer logger.Sync()
-	Sugar = *logger.Sugar() // init global Sugar
+	models.Sugar = *logger.Sugar() // init global Sugar
 
 	// Generate your own encryption key (32 bytes)
 	key := make([]byte, 32)

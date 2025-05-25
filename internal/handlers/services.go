@@ -7,6 +7,7 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
+	"gorsovet/internal/minio"
 	"gorsovet/internal/models"
 
 	"google.golang.org/grpc/codes"
@@ -21,6 +22,23 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 
 	var response pb.RegisterResponse
 
+	// сначала подсоединяемся к Базе Данных, недоступна - отбой
+	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
+	if err != nil {
+		models.Sugar.Debugln(err)
+		response.Success = false
+		response.Reply = "ConnectToDB error"
+		return &response, err
+	}
+	// S3
+	minioClient, err := minio.ConnectToS3()
+	if err != nil {
+		models.Sugar.Debugln(err)
+		response.Success = false
+		response.Reply = "S3 connection error"
+		return &response, err
+	}
+
 	userName := req.GetUsername()
 	password := req.GetPassword()
 	if userName == "" || password == "" {
@@ -30,13 +48,6 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 	}
 	metadata := req.GetMetadata()
 
-	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
-	if err != nil {
-		models.Sugar.Debugln(err)
-		response.Success = false
-		response.Reply = "ConnectToDB error"
-		return &response, err
-	}
 	yes, _ := db.IfUserExists(ctx, userName)
 	if yes {
 		response.Success = false
@@ -60,6 +71,9 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		models.Sugar.Debugln(response.Reply)
 		return &response, status.Error(codes.Internal, response.Reply)
 	}
+
+	err = minio.CreateBucket(ctx, minioClient, strings.ToLower(userName))
+
 	response.Success = true
 	response.UserId = userId
 	response.Reply = "OK"

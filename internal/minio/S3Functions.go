@@ -1,4 +1,4 @@
-package main
+package minio
 
 import (
 	"bytes"
@@ -6,16 +6,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"gorsovet/internal/models"
 	"io"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
-
-	"gorsovet/internal/models"
 )
 
 // ConnectToS3 - get TLS connection to MinIO
@@ -29,7 +27,7 @@ func ConnectToS3() (client *minio.Client, err error) {
 	// Load CA certificate
 	caCert, err := os.ReadFile("certs/public.crt")
 	if err != nil {
-		log.Fatalf("Error reading CA certificate: %v", err)
+		return nil, fmt.Errorf("error reading CA certificate: %w", err)
 	}
 
 	caCertPool := x509.NewCertPool()
@@ -45,14 +43,15 @@ func ConnectToS3() (client *minio.Client, err error) {
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
 	}
-	client, err = minio.New(endpoint, &minio.Options{
+	return minio.New(endpoint, &minio.Options{
+		//client, err = minio.New(endpoint, &minio.Options{
 		Creds:     credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure:    useSSL,
 		Transport: transport,
 	})
 	// transport.CloseIdleConnections()
 
-	return
+	//return
 }
 
 // CreateBucket - create new bucket if not exist
@@ -60,12 +59,12 @@ func CreateBucket(ctx context.Context, minioClient *minio.Client, bucketName str
 
 	exists, err := minioClient.BucketExists(ctx, bucketName)
 	if exists {
-		Sugar.Debugf("buckect %s exists\n", bucketName)
+		models.Sugar.Debugf("buckect %s exists\n", bucketName)
 		return nil
 	}
 	// if ошибка вызова BucketExists
 	if err != nil {
-		Sugar.Debugf("Bucket %s BucketExists method error: %v", bucketName, err)
+		models.Sugar.Debugf("Bucket %s BucketExists method error: %v", bucketName, err)
 		return fmt.Errorf("bucket %s BucketExists error: %w", bucketName, err)
 	}
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
@@ -87,7 +86,7 @@ func S3PutBytesToFile(ctx context.Context, minioClient *minio.Client,
 	if err != nil {
 		return
 	}
-	Sugar.Debugf("file written lenght %d\n", info.Size)
+	models.Sugar.Debugf("file written lenght %d\n", info.Size)
 	// Check if file exists on minio
 	_, err = minioClient.StatObject(ctx, bucketName, objectName, minio.StatObjectOptions{ServerSideEncryption: sse})
 	return
@@ -107,7 +106,7 @@ func S3PutFile(ctx context.Context, minioClient *minio.Client,
 	if err != nil {
 		return
 	}
-	Sugar.Debugf("file written lenght %d\n", info.Size)
+	models.Sugar.Debugf("file written lenght %d\n", info.Size)
 	// Check if file exists on minio
 	_, err = minioClient.StatObject(ctx, bucketName, objectName, minio.StatObjectOptions{ServerSideEncryption: sse})
 	return
@@ -135,19 +134,19 @@ func S3GetFileBytes(ctx context.Context, minioClient *minio.Client,
 	// Convert to bytes
 	fileBytes = buf.Bytes()
 
-	Sugar.Debugf("file read lenght %d\n", len(fileBytes))
+	models.Sugar.Debugf("file read lenght %d\n", len(fileBytes))
 
 	return fileBytes, err
 }
 
 func S3RemoveFile(ctx context.Context, minioClient *minio.Client, bucketName, objectName string) (err error) {
 	err = minioClient.RemoveObject(ctx, bucketName, objectName, minio.RemoveObjectOptions{})
-	Sugar.Debugf("S3RemoveFile %s from %s err %v\n", objectName, bucketName, err)
+	models.Sugar.Debugf("S3RemoveFile %s from %s err %v\n", objectName, bucketName, err)
 	return
 }
 func S3RemoveBucket(ctx context.Context, minioClient *minio.Client, bucketName string) (err error) {
 	err = minioClient.RemoveBucket(ctx, bucketName)
-	Sugar.Debugf("S3RemoveBucket %s  err %v\n", bucketName, err)
+	models.Sugar.Debugf("S3RemoveBucket %s  err %v\n", bucketName, err)
 	return
 }
 

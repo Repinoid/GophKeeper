@@ -100,10 +100,11 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 	ble := len(bucketKeyHex)
 	_ = ble
 
-	// переводим имя в капслок
+	// переводим имя в капслок, имя бакета в нижний регистр
 	userName = strings.ToUpper(userName)
-	order := "INSERT INTO USERA(username, password, bucketname, bucketkey, metadata) VALUES ($1, crypt($2, gen_salt('md5')), $1, $3, $4) ;"
-	_, err = tx.Exec(ctx, order, userName, password, bucketKeyHex, metaData)
+	bucketname := strings.ToLower(userName)
+	order := "INSERT INTO USERA(username, password, bucketname, bucketkey, metadata) VALUES ($1, crypt($2, gen_salt('md5')), $3, $4, $5) ;"
+	_, err = tx.Exec(ctx, order, userName, password, bucketname, bucketKeyHex, metaData)
 	if err != nil {
 		return fmt.Errorf("add user error is %w", err)
 	}
