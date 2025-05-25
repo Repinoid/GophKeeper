@@ -67,12 +67,18 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 	yes, userId := db.IfUserExists(ctx, userName)
 	if !yes {
 		response.Success = false
-		response.Reply = "Did not find user in DB"
+		response.Reply = "Did not find created \"" + strings.ToUpper(userName) + "\" user in DB"
 		models.Sugar.Debugln(response.Reply)
 		return &response, status.Error(codes.Internal, response.Reply)
 	}
 
 	err = minio.CreateBucket(ctx, minioClient, strings.ToLower(userName))
+	if err != nil {
+		models.Sugar.Debugln(err)
+		response.Success = false
+		response.Reply = "Create \"" + strings.ToLower(userName) + "\" bucket error"
+		return &response, err
+	}
 
 	response.Success = true
 	response.UserId = userId

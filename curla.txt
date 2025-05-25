@@ -10,4 +10,4 @@
 
  grpcurl -plaintext -msg-template localhost:3200  gorsovet.gkeeper/RegisterUser
 
- grpcurl -plaintext -d '{\"username\":\"name\", \"password\":\"pass\", \"metadata\":\"ddd\"}' localhost:3200  gorsovet.gkeeper/RegisterUser
+ grpcurl -plaintext -d "{\"username\":\"name4636\", \"password\":\"pass\", \"metadata\":\"ddd\"}" localhost:3200  gorsovet.gkeeper/RegisterUser

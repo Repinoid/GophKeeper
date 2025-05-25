@@ -2,7 +2,7 @@
 
 services:
   go_db:
-    container_name: godb
+    container_name: gkeeperdb
     # имя образа из которого создастся база данных
     image: postgres:17
     environment:
@@ -35,7 +35,7 @@ services:
 
   minio:
     image: minio/minio
-    container_name: micont
+    container_name: gkeeperS3
     # /buckets folder on container where S3 store
     command: server /buckets --console-address ":9001"
     environment:
