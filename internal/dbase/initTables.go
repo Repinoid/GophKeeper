@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -99,6 +100,8 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 	ble := len(bucketKeyHex)
 	_ = ble
 
+	// переводим имя в капслок
+	userName = strings.ToUpper(userName)
 	order := "INSERT INTO USERA(username, password, bucketname, bucketkey, metadata) VALUES ($1, crypt($2, gen_salt('md5')), $1, $3, $4) ;"
 	_, err = tx.Exec(ctx, order, userName, password, bucketKeyHex, metaData)
 	if err != nil {
@@ -108,6 +111,7 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 }
 
 func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, password string) (yes bool) {
+	userName = strings.ToUpper(userName)
 	db := dataBase.DB
 	order := "SELECT (crypt($2, password) = password) FROM USERA WHERE username= $1 ;"
 	row := db.QueryRow(ctx, order, userName, password) // password here - what was entered
@@ -123,6 +127,7 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 
 // nil - user exists
 func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool, uId int32) {
+	userName = strings.ToUpper(userName)
 	db := dataBase.DB
 	order := "SELECT userId from USERA WHERE username = $1 ;"
 	row := db.QueryRow(ctx, order, userName) // password here - what was entered

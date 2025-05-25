@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	_ "net/http/pprof"
+	"strings"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
@@ -36,6 +37,14 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		response.Reply = "ConnectToDB error"
 		return &response, err
 	}
+	yes, _ := db.IfUserExists(ctx, userName)
+	if yes {
+		response.Success = false
+		response.Reply = "User \"" + strings.ToUpper(userName) + "\" already exists"
+		models.Sugar.Debugln(response.Reply)
+		return &response, status.Error(codes.AlreadyExists, response.Reply)
+	}
+
 	err = db.AddUser(ctx, userName, password, metadata)
 	if err != nil {
 		models.Sugar.Debugln(err)
@@ -43,10 +52,12 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		response.Reply = "AddUser error"
 		return &response, err
 	}
+	// получение userId, заодно удостоверяемся что регистрация прошла успешно
 	yes, userId := db.IfUserExists(ctx, userName)
 	if !yes {
 		response.Success = false
 		response.Reply = "Did not find user in DB"
+		models.Sugar.Debugln(response.Reply)
 		return &response, status.Error(codes.Internal, response.Reply)
 	}
 	response.Success = true

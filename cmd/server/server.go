@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -40,6 +41,8 @@ func Run() (err error) {
 	}
 	grpcServer := grpc.NewServer()
 	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
+	// reflection nice for grpcurl
+	reflection.Register(grpcServer)
 
 	// Graceful shutdown channel
 	done := make(chan bool, 1)
@@ -60,6 +63,7 @@ func Run() (err error) {
 		close(done)
 	}()
 
+	log.Println("GRPC Server Started")
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}
