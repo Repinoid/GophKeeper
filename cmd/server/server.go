@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	pb "gorsovet/cmd/proto"
 
@@ -21,40 +26,39 @@ func main() {
 
 func Run() (err error) {
 
-	//	var wg sync.WaitGroup
-	//ctx, cancel := context.WithCancel(context.Background())
-
-	// go func() {
-	 	exit := make(chan os.Signal, 1)
-	 	signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	// 	<-exit
-	// 	cancel()
-	// }()
-	// gRPC server, default port ":3200" or from parameters
+	// во первЫх строках - если сеть не прослушивается, до дальше и делать нечего
 	listen, err := net.Listen("tcp", ":3200")
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	grpcServer := grpc.NewServer()
-
 	pb.RegisterGkeeperServer(grpcServer, &GkeeperService{})
 
-	//	wg.Add(1)
+	// Graceful shutdown channel
+	done := make(chan bool, 1)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		log.Println("Server is shutting down...")
+
+		// Give existing connections 30 seconds to complete
+		_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// Stop accepting new connections and wait for existing ones
+		grpcServer.GracefulStop()
+		// Alternatively, use s.Stop() for immediate shutdown
+		close(done)
+	}()
+	
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}
 
-	// go func() {
-	// 	<-ctx.Done()
-	// 	//		defer wg.Done()
+	<-done
+	log.Println("Server stopped")
 
-	// 	// GracefulStop stops the gRPC server gracefully.
-	// 	// It stops the server from accepting new connections and RPCs and blocks until all the pending RPCs are finished.
-	// 	grpcServer.GracefulStop()
-	// 	// defer для порядку
-	// 	defer fmt.Println("Сервер gRPC Shutdown gracefully")
-	// }()
-	//	wg.Wait()
 	return
 }
