@@ -6,9 +6,10 @@ import (
 )
 
 var (
+	MinioClient *minio.Client
 	Sugar       zap.SugaredLogger
 	CryptoKey   = []byte("conclave")
 	Gport       = ":3200"
 	DBEndPoint  = "postgres://userp:parole@localhost:5432/dbaza"
-	MinioClient *minio.Client
+	MasterKey   = []byte("Masterkey")
 )

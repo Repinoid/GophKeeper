@@ -5,20 +5,14 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 type DBstruct struct {
 	//	DB     *pgx.Conn
 	DB *pgxpool.Pool
-	// UserID int64
 }
 
-var (
-	DBEndPoint string
-	MasterKey  []byte = []byte("MasterKey")
-	Sugar      zap.SugaredLogger
-)
+var ()
 
 // UsersTableCreation создание таблицы юзеров
 func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {

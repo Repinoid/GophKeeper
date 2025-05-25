@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
+	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 )
 
@@ -27,7 +28,7 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 		return err
 	}
 	// кодируем ключ бакета мастер-ключом
-	codedBucketkey, err := privacy.EncryptB2B(bucketKey, MasterKey)
+	codedBucketkey, err := privacy.EncryptB2B(bucketKey, models.MasterKey)
 	if err != nil {
 		return err
 	}
