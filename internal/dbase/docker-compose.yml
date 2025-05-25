@@ -1,35 +1,35 @@
-# Три контейнера - сервер, агент и база данных
-
 services:
-  go_db:
-    container_name: go_db
-    # имя образа из которого создастся база данных
+  postgres:
     image: postgres:17
+    container_name: postgres
     environment:
-      POSTGRES_PASSWORD: parole
-      POSTGRES_USER: username
-      POSTGRES_DB: baza
-    ports:
-      - target: 5432 
-        published: 5433
-        protocol: tcp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretar
+      POSTGRES_DB: mydb
     volumes:
-      - PgVolume:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
-      - localnet
+      - pg-network
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+    ports:
+      - "8080:80"
+    networks:
+      - pg-network
+    depends_on:
+      - postgres
 
 volumes:
-  PgVolume:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      # /path/to/data
-      device: ./dbaser
+  postgres_data:
 
 
 networks:
-  localnet:
+  pg-network:
     driver: bridge
-
