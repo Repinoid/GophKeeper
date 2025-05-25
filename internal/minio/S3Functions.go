@@ -3,13 +3,9 @@ package minio
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"gorsovet/internal/models"
 	"io"
-	"net/http"
-	"os"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -22,32 +18,33 @@ func ConnectToS3() (client *minio.Client, err error) {
 	endpoint := "localhost:9000"
 	accessKey := "nail"
 	secretKey := "password"
-	useSSL := true // true if TLS, so endpoint prefix https://
+	//	useSSL := true // true if TLS, so endpoint prefix https://
+	useSSL := false // true if TLS, so endpoint prefix https://
 
-	// Load CA certificate
-	caCert, err := os.ReadFile("../../internal/certs/public.crt")
-	if err != nil {
-		return nil, fmt.Errorf("error reading CA certificate: %w", err)
-	}
+	// // Load CA certificate
+	// caCert, err := os.ReadFile("certs/public.crt")
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error reading CA certificate: %w", err)
+	// }
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	// caCertPool := x509.NewCertPool()
+	// caCertPool.AppendCertsFromPEM(caCert)
 
-	// Configure TLS
-	tlsConfig := &tls.Config{
-		RootCAs:            caCertPool,
-		InsecureSkipVerify: false, // Set to true only for testing with self-signed certs
-	}
+	// // Configure TLS
+	// tlsConfig := &tls.Config{
+	// 	RootCAs:            caCertPool,
+	// 	InsecureSkipVerify: false, // Set to true only for testing with self-signed certs
+	// }
 
-	// Initialize minio client object with custom transport
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
+	// // Initialize minio client object with custom transport
+	// transport := &http.Transport{
+	// 	TLSClientConfig: tlsConfig,
+	// }
 	return minio.New(endpoint, &minio.Options{
 		//client, err = minio.New(endpoint, &minio.Options{
-		Creds:     credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure:    useSSL,
-		Transport: transport,
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure: useSSL,
+		// Transport: transport,
 	})
 	// transport.CloseIdleConnections()
 
