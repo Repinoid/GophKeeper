@@ -5,5 +5,5 @@ import "go.uber.org/zap"
 var (
 	Sugar      zap.SugaredLogger
 	Gport      = ":3200"
-	DBEndPoint = "postgres://username:parole@localhost:5433/baza"
+	DBEndPoint = "postgres://userp:parole@localhost:5432/dbaza"
 )

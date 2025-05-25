@@ -2,22 +2,36 @@
 
 services:
   go_db:
-    container_name: go_db
+    container_name: godb
     # имя образа из которого создастся база данных
     image: postgres:17
     environment:
       POSTGRES_PASSWORD: parole
-      POSTGRES_USER: username
-      POSTGRES_DB: baza
+      POSTGRES_USER: userp
+      POSTGRES_DB: dbaza
     ports:
       - target: 5432 
-        published: 5433
+        published: 5432
         protocol: tcp
     volumes:
       - PgVolume:/var/lib/postgresql/data
     networks:
       - localnet
 
+  pgadmin:
+      image: dpage/pgadmin4:latest
+      container_name: pgadmin
+      environment:
+        PGADMIN_DEFAULT_EMAIL: a@e.com
+        PGADMIN_DEFAULT_PASSWORD: admpass
+      volumes:
+        - pgadmin_data:/var/lib/pgadmin
+      ports:
+        - "8080:80"
+      depends_on:
+        - go_db
+      networks:
+        - localnet
 
 volumes:
   PgVolume:
@@ -27,6 +41,7 @@ volumes:
       o: bind
       # /path/to/data
       device: ./dbaser
+  pgadmin_data:
 
 
 networks:
