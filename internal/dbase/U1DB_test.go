@@ -1,4 +1,4 @@
-package db_package
+package dbase
 
 import (
 	"context"
@@ -50,9 +50,9 @@ func (suite *TstBase) Test01AddUser() {
 	suite.Require().True(yes)
 	yes = suite.dataBase.CheckUserPassword(suite.ctx, "userName", "passwordas")
 	suite.Require().False(yes)
-	yes = suite.dataBase.IfUserExists(suite.ctx, "userName")
+	yes, _ = suite.dataBase.IfUserExists(suite.ctx, "userName")
 	suite.Require().True(yes)
-	yes = suite.dataBase.IfUserExists(suite.ctx, "userName1")
+	yes, _ = suite.dataBase.IfUserExists(suite.ctx, "userName1")
 	suite.Require().False(yes)
 
 }

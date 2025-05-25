@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GkeeperClient interface {
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	RegisterUser(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 }
 
 type gkeeperClient struct {
@@ -29,9 +29,9 @@ func NewGkeeperClient(cc grpc.ClientConnInterface) GkeeperClient {
 	return &gkeeperClient{cc}
 }
 
-func (c *gkeeperClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+func (c *gkeeperClient) RegisterUser(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	out := new(RegisterResponse)
-	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/Register", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/RegisterUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *gkeeperClient) Register(ctx context.Context, in *RegisterRequest, opts 
 // All implementations must embed UnimplementedGkeeperServer
 // for forward compatibility
 type GkeeperServer interface {
-	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	RegisterUser(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -50,8 +50,8 @@ type GkeeperServer interface {
 type UnimplementedGkeeperServer struct {
 }
 
-func (UnimplementedGkeeperServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
+func (UnimplementedGkeeperServer) RegisterUser(context.Context, *RegisterRequest) (*RegisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterUser not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
 
@@ -66,20 +66,20 @@ func RegisterGkeeperServer(s grpc.ServiceRegistrar, srv GkeeperServer) {
 	s.RegisterService(&Gkeeper_ServiceDesc, srv)
 }
 
-func _Gkeeper_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Gkeeper_RegisterUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GkeeperServer).Register(ctx, in)
+		return srv.(GkeeperServer).RegisterUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gorsovet.gkeeper/Register",
+		FullMethod: "/gorsovet.gkeeper/RegisterUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GkeeperServer).Register(ctx, req.(*RegisterRequest))
+		return srv.(GkeeperServer).RegisterUser(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +92,8 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*GkeeperServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Register",
-			Handler:    _Gkeeper_Register_Handler,
+			MethodName: "RegisterUser",
+			Handler:    _Gkeeper_RegisterUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

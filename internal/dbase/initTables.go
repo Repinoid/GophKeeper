@@ -1,4 +1,4 @@
-package db_package
+package dbase
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
+	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
-
 )
 
 type DBstruct struct {
@@ -28,6 +28,8 @@ var (
 // UsersTableCreation создание таблицы юзеров
 func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {
 
+	_ = models.Gport
+
 	db := dataBase.DB
 	_, err := db.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS pgcrypto;") // расширение для хэширования паролей
 	if err != nil {
@@ -36,7 +38,7 @@ func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {
 
 	creatorOrder :=
 		"CREATE TABLE IF NOT EXISTS USERA" +
-			"(userCode INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
+			"(userId INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
 			"username VARCHAR(64) UNIQUE, " +
 			"password TEXT NOT NULL, " +
 			"bucketname VARCHAR(64) NOT NULL, " +
@@ -120,11 +122,11 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 }
 
 // nil - user exists
-func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool) {
+func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool, uId int32) {
 	db := dataBase.DB
-	order := "SELECT 7 from USERA WHERE username = $1 ;"
+	order := "SELECT userId from USERA WHERE username = $1 ;"
 	row := db.QueryRow(ctx, order, userName) // password here - what was entered
-	var seven int
-	err := row.Scan(&seven)
-	return err == nil
+	//var uId int
+	err := row.Scan(&uId)
+	return err == nil, uId
 }

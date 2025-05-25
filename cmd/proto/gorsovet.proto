@@ -6,7 +6,7 @@ option go_package = "gorsovet/proto";
 
 // 
 service gkeeper {
-  rpc Register (RegisterRequest) returns (RegisterResponse) {}
+  rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
 }
 
 message RegisterRequest {
@@ -16,8 +16,8 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  string user_id = 1;
-  string message = 2;
+  int32 user_id = 1;
+  string reply = 2;
   bool success = 3;
 }
 

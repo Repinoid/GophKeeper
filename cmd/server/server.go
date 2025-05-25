@@ -10,15 +10,22 @@ import (
 	"time"
 
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/handlers"
+	"gorsovet/internal/models"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-type GkeeperService struct {
-	pb.UnimplementedGkeeperServer
-}
-
 func main() {
+
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
+	}
+	defer logger.Sync()
+	models.Sugar = *logger.Sugar()
+
 	if err := Run(); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
@@ -27,12 +34,12 @@ func main() {
 func Run() (err error) {
 
 	// во первЫх строках - если сеть не прослушивается, до дальше и делать нечего
-	listen, err := net.Listen("tcp", ":3200")
+	listen, err := net.Listen("tcp", models.Gport)
 	if err != nil {
 		log.Fatal(err)
 	}
 	grpcServer := grpc.NewServer()
-	pb.RegisterGkeeperServer(grpcServer, &GkeeperService{})
+	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
 
 	// Graceful shutdown channel
 	done := make(chan bool, 1)
@@ -52,7 +59,7 @@ func Run() (err error) {
 		// Alternatively, use s.Stop() for immediate shutdown
 		close(done)
 	}()
-	
+
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}

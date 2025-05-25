@@ -1,4 +1,4 @@
-package db_package
+package dbase
 
 import (
 	"context"
