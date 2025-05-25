@@ -11,6 +11,7 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/handlers"
+	"gorsovet/internal/minio"
 	"gorsovet/internal/models"
 
 	"go.uber.org/zap"
@@ -26,6 +27,12 @@ func main() {
 	}
 	defer logger.Sync()
 	models.Sugar = *logger.Sugar()
+
+	// S3 Create one client and reuse it (it's thread-safe)
+	models.MinioClient, err = minio.ConnectToS3()
+	if err != nil {
+		models.Sugar.Fatalf("No connection with S3. %w", err)
+	}
 
 	if err := Run(); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)

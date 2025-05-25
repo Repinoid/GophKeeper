@@ -32,7 +32,8 @@ services:
         - go_db
       networks:
         - localnet
-
+        
+  # minio no SSL
   minio:
     image: minio/minio
     container_name: gkeeperS3

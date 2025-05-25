@@ -16,39 +16,14 @@ import (
 func ConnectToS3() (client *minio.Client, err error) {
 
 	endpoint := "localhost:9000"
-	accessKey := "nail"
+	accessKey := "nail" // auth from docker-compose
 	secretKey := "password"
-	//	useSSL := true // true if TLS, so endpoint prefix https://
-	useSSL := false // true if TLS, so endpoint prefix https://
+	useSSL := false // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
 
-	// // Load CA certificate
-	// caCert, err := os.ReadFile("certs/public.crt")
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error reading CA certificate: %w", err)
-	// }
-
-	// caCertPool := x509.NewCertPool()
-	// caCertPool.AppendCertsFromPEM(caCert)
-
-	// // Configure TLS
-	// tlsConfig := &tls.Config{
-	// 	RootCAs:            caCertPool,
-	// 	InsecureSkipVerify: false, // Set to true only for testing with self-signed certs
-	// }
-
-	// // Initialize minio client object with custom transport
-	// transport := &http.Transport{
-	// 	TLSClientConfig: tlsConfig,
-	// }
 	return minio.New(endpoint, &minio.Options{
-		//client, err = minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
-		// Transport: transport,
 	})
-	// transport.CloseIdleConnections()
-
-	//return
 }
 
 // CreateBucket - create new bucket if not exist

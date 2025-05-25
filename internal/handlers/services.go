@@ -30,14 +30,7 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		response.Reply = "ConnectToDB error"
 		return &response, err
 	}
-	// S3
-	minioClient, err := minio.ConnectToS3()
-	if err != nil {
-		models.Sugar.Debugln(err)
-		response.Success = false
-		response.Reply = "S3 connection error"
-		return &response, err
-	}
+	defer db.CloseBase()
 
 	userName := req.GetUsername()
 	password := req.GetPassword()
@@ -71,8 +64,8 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		models.Sugar.Debugln(response.Reply)
 		return &response, status.Error(codes.Internal, response.Reply)
 	}
-
-	err = minio.CreateBucket(ctx, minioClient, strings.ToLower(userName))
+	// создаём бакет с именем userName но LowerCase
+	err = minio.CreateBucket(ctx, models.MinioClient, strings.ToLower(userName))
 	if err != nil {
 		models.Sugar.Debugln(err)
 		response.Success = false
@@ -82,7 +75,7 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 
 	response.Success = true
 	response.UserId = userId
-	response.Reply = "OK"
+	response.Reply = "User \"" + strings.ToUpper(userName) + "\" created"
 
 	return &response, nil
 }
