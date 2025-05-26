@@ -11,35 +11,26 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/handlers"
-	"gorsovet/internal/minio"
 	"gorsovet/internal/models"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 
-	logger, err := zap.NewDevelopment()
+	ctx := context.Background()
+	err := initServer(ctx)
 	if err != nil {
-		panic("cannot initialize zap")
-	}
-	defer logger.Sync()
-	models.Sugar = *logger.Sugar()
-
-	// S3 Create one client and reuse it (it's thread-safe)
-	models.MinioClient, err = minio.ConnectToS3()
-	if err != nil {
-		models.Sugar.Fatalf("No connection with S3. %w", err)
+		models.Sugar.Fatalf("The Server could not start. Reason - %v", err)
 	}
 
-	if err := Run(); err != nil {
+	if err = Run(ctx); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
-func Run() (err error) {
+func Run(ctx context.Context) (err error) {
 
 	// во первЫх строках - если сеть не прослушивается, до дальше и делать нечего
 	listen, err := net.Listen("tcp", models.Gport)
@@ -71,6 +62,7 @@ func Run() (err error) {
 	}()
 
 	log.Println("GRPC Server Started")
+	// если сервер не стартует, до дальше и делать нечего
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}

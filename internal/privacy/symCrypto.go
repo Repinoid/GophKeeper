@@ -20,7 +20,6 @@ func EncryptB2B(bytesToEncrypt, key []byte) (encrypted []byte, err error) {
 	// MD5 checksum of key, 16 bytes
 	keyB16 := md5.Sum(key)
 	keyB := keyB16[:]
-	//keyB = []byte("0123456789123456")
 	// Базовый интерфейс симметричного шифрования — cipher.Block из пакета  https://pkg.go.dev/crypto/cipher
 	// Зашифруем помощью алгоритма AES (Advanced Encryption Standard). Это блочный алгоритм, размер блока — 16 байт.
 	// NewCipher создает и возвращает новый cipher.Block.

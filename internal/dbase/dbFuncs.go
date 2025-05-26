@@ -16,6 +16,7 @@ import (
 func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaData string) error {
 	db := dataBase.DB
 
+	// транзакция - рудiмент от прошлого проекта, когда данные вносились в пару таблиц. если по итогу ничего не изменится - сверну в простой db.Exec
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("error db.Begin  %w", err)
