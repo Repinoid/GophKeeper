@@ -7,6 +7,7 @@ toolchain go1.23.9
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/jackc/pgx/v5 v5.7.5
+	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/minio/minio-go/v7 v7.0.92
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0

@@ -86,3 +86,24 @@ func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (ye
 	err := row.Scan(&uId)
 	return err == nil, uId
 }
+
+func (dataBase *DBstruct) GetUserNameByToken(ctx context.Context, token string) (username string, err error) {
+	order := "SELECT username from TOKENA WHERE token =  $1 ;"
+	row := dataBase.DB.QueryRow(ctx, order, token)
+	err = row.Scan(&username)
+	return
+}
+
+func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username string) (bucketKey, bucketName string, err error) {
+	order := "SELECT bucketkey, bucketname from USERA WHERE username =  $1 ;"
+	row := dataBase.DB.QueryRow(ctx, order, username)
+	err = row.Scan(&bucketKey, &bucketName)
+	return
+}
+
+func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, dataType, fileKey, metaData string) (err error) {
+
+	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData) VALUES ($1, $2, $3, $4, $5) ;"
+	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData)
+	return
+}

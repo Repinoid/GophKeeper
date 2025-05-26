@@ -8,6 +8,7 @@ option go_package = "gorsovet/proto";
 service gkeeper {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
+  rpc PutText (PutTextRequest) returns (PutTextResponse) {}
 }
 
 message RegisterRequest {
@@ -33,6 +34,19 @@ message LoginResponse {
   string reply = 2;
   bool success = 3;
   string token = 4;
+}
+
+message PutTextRequest {
+  string token = 1;
+  string textdata = 2;
+  string metadata = 3;
+}
+
+message PutTextResponse {
+  bool    success = 1;
+  int32   object_id = 2;
+  string  reply = 3;
+  int64   size = 4;
 }
 
 
