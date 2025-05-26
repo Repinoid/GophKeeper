@@ -12,6 +12,7 @@ import (
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/handlers"
 	"gorsovet/internal/models"
+	"gorsovet/internal/privacy"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -37,7 +38,16 @@ func Run(ctx context.Context) (err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	grpcServer := grpc.NewServer()
+	// сертификаты в папке tls, для сервера GRPC требует и публичный и приватный
+	creds, err := privacy.LoadTLSCredentials("../tls/public.crt", "../tls/private.key")
+	//	creds, err := privacy.LoadTLSCredentials("../tls/cert.pem", "../tls/key.pem")
+	if err != nil {
+		log.Fatalf("failed to load TLS credentials: %v", err)
+	}
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
+
+	//	grpcServer := grpc.NewServer()
+
 	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
 	// reflection nice for grpcurl
 	reflection.Register(grpcServer)

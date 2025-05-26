@@ -39,7 +39,7 @@ func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (
 	if err != nil {
 		return &response, err
 	}
-	// переводим from HEX
+	// в bucketKeyHex - ключ бакета, шифрованный мастер-ключом.  переводим его сначала из HEX в байты
 	codedBucketkey, err := hex.DecodeString(bucketKeyHex)
 	if err != nil {
 		return &response, err
@@ -49,26 +49,30 @@ func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (
 	if err != nil {
 		return &response, err
 	}
+
 	data := req.GetTextdata()
 	metadata := req.GetMetadata()
 
-	// Generate your own encryption key (32 bytes)
+	// создаём случайный ключ для шифрования файла
 	fileKey := make([]byte, 32)
 	_, err = rand.Read(fileKey)
 	if err != nil {
 		return &response, err
 	}
 	// NewSSEC returns a new server-side-encryption using SSE-C and the provided key. The key must be 32 bytes long
+	// sse - криптоключ для шифрования файла при записи в Minio
+	// Requests specifying Server Side Encryption with Customer provided keys must be made over a secure connection.
+	// при использовании собственного ключа требует TLS клиент-сервер
 	sse, err := encrypt.NewSSEC(fileKey)
 
-	// Generate filename
+	// генерируем случайное имя файла, 16 байт, в HEX распухнет до 32 символов
 	forName := make([]byte, 16)
 	_, err = rand.Read(forName)
 	if err != nil {
 		return &response, err
 	}
 	// переводим в HEX
-	objectName := hex.EncodeToString(forName)
+	objectName := hex.EncodeToString(forName) + ".text"
 
 	info, err := minio.S3PutBytesToFile(ctx, models.MinioClient, bucketName, objectName, []byte(data), sse)
 	if err != nil {

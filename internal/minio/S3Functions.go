@@ -18,7 +18,7 @@ func ConnectToS3() (client *minio.Client, err error) {
 	endpoint := "localhost:9000"
 	accessKey := "nail" // auth from docker-compose
 	secretKey := "password"
-	useSSL := false // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
+	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
 
 	return minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),

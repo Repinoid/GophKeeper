@@ -5,9 +5,9 @@ import (
 	"log"
 
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/privacy"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 var gPort = ":3200"
@@ -26,7 +26,14 @@ func main() {
 
 func run(ctx context.Context) (err error) {
 
-	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// устанавливаем соединение с сервером
+	tlsCreds, err := privacy.LoadClientTLSCredentials("../tls/public.crt")
+	if err != nil {
+		log.Fatal("cannot load TLS credentials: ", err)
+	}
+	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
+
+	//	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
