@@ -74,7 +74,7 @@ func (dataBase *DBstruct) DataTableCreation(ctx context.Context) error {
 	db := dataBase.DB
 
 	creatorOrder :=
-		"CREATE TABLE IF NOT EXISTS USERA" +
+		"CREATE TABLE IF NOT EXISTS DATAS" +
 			"(id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
 			"username VARCHAR(64) UNIQUE, " +
 			"fileURL TEXT NOT NULL, " +
