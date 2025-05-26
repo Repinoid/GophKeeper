@@ -13,6 +13,7 @@ import (
 	"gorsovet/internal/privacy"
 )
 
+// AddUser запись нового юзера в таблицу
 func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaData string) error {
 	db := dataBase.DB
 
@@ -65,7 +66,17 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 	return
 }
 
-// nil - user exists
+func (dataBase *DBstruct) PutToken(ctx context.Context, userName, token, metadata string) (err error) {
+	userName = strings.ToUpper(userName)
+	db := dataBase.DB
+
+	order := "INSERT INTO TOKENA(userName, token, metadata) VALUES ($1, $2, $3) ;"
+	_, err = db.Exec(ctx, order, userName, token, metadata)
+
+	return
+}
+
+// IfUserExists возвращает да или нет и id юзера
 func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool, uId int32) {
 	userName = strings.ToUpper(userName)
 	db := dataBase.DB
