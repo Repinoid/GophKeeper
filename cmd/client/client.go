@@ -48,7 +48,7 @@ func run(ctx context.Context) (err error) {
 
 	reqtxt := &pb.PutTextRequest{Token: token, Textdata: "12345", Metadata: "metta"}
 	respt, err := client.PutText(ctx, reqtxt)
-	log.Printf("%+v", respt)
+	log.Printf("%+v %v\n", respt, err)
 
 	return
 }
