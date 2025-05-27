@@ -13,6 +13,9 @@ import (
 	"gorsovet/internal/privacy"
 
 	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (resp *pb.PutTextResponse, err error) {
@@ -76,7 +79,8 @@ func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (
 
 	info, err := minio.S3PutBytesToFile(ctx, models.MinioClient, bucketName, objectName, []byte(data), sse)
 	if err != nil {
-		return &response, err
+		response.Reply = "bad S3PutBytesToFile"
+		return &response, status.Error(codes.Unimplemented, response.Reply)
 	}
 	// зашифровываем ключ файла ключом багета
 	objectKey, err := privacy.EncryptB2B(fileKey, bucketKey)
@@ -84,10 +88,46 @@ func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (
 	objectKeyHex := hex.EncodeToString(objectKey)
 
 	err = db.PutFileParams(ctx, userName, objectName, "text", objectKeyHex, metadata)
-
+	if err != nil {
+		response.Reply = "bad PutFileParams"
+		return &response, status.Error(codes.Unimplemented, response.Reply)
+	}
 	response.Size = info.Size
 	response.Success = true
 	response.Reply = "OK"
 
-	return
+	return &response, err
+}
+
+func (gk *GkeeperService) ListObjects(ctx context.Context, req *pb.ListObjectsRequest) (resp *pb.ListObjectsResponse, err error) {
+	response := pb.ListObjectsResponse{Success: false, Reply: "Could not get objects list"}
+
+	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
+	if err != nil {
+		models.Sugar.Debugln(err)
+		response.Success = false
+		response.Reply = "ConnectToDB error"
+		return &response, err
+	}
+	defer db.CloseBase()
+
+	token := req.GetToken()
+	username, err := db.GetUserNameByToken(ctx, token)
+	if err != nil {
+		return &response, err
+	}
+
+	lists, err := db.GetObjectsList(ctx, username)
+
+	parama := make([]*pb.ObjectParams, len(lists))
+
+	for i, obj := range lists {
+		m := pb.ObjectParams{Id: obj.Id, DataType: obj.Datatype, Metadata: obj.Metadata, CreatedAt: timestamppb.New(obj.CreatedAt)}
+		parama[i] = &m
+	}
+	response.Listing = parama
+	response.Success = true
+	response.Reply = "OK"
+
+	return &response, err
 }

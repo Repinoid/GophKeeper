@@ -3,6 +3,7 @@ package dbase
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"context"
 
@@ -105,5 +106,40 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, 
 
 	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData) VALUES ($1, $2, $3, $4, $5) ;"
 	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData)
+	return
+}
+
+type objListStruct struct {
+	Id        int32
+	Datatype  string
+	Metadata  string
+	CreatedAt time.Time
+}
+
+func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []objListStruct, err error) {
+
+	order := "SELECT id, datatype, metadata, user_created_at from DATAS WHERE username = $1 order by user_created_at ;"
+	rows, err := dataBase.DB.Query(ctx, order, username) //
+	if err != nil {
+		models.Sugar.Debugf("db.Query %+v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	ols := objListStruct{}
+
+	for rows.Next() {
+		err = rows.Scan(&ols.Id, &ols.Datatype, &ols.Metadata, &ols.CreatedAt)
+		if err != nil {
+			return
+		}
+		listing = append(listing, ols)
+	}
+	err = rows.Err()
+	if err != nil { // Err returns any error that occurred while reading. Err must only be called after the Rows is closed
+		models.Sugar.Debugf("db.Query %+v\n", err)
+		return
+	}
+
 	return
 }

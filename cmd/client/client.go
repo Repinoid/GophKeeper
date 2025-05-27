@@ -15,6 +15,7 @@ import (
 )
 
 var gPort = ":3200"
+var token = ""
 
 func main() {
 	ctx := context.Background()
@@ -42,6 +43,12 @@ func run(ctx context.Context) (err error) {
 	}
 	defer conn.Close()
 
+	// временное решение по хранению токена в файле. создаётся при вызове Login
+	tokenB, err := os.ReadFile("token.txt")
+	if err == nil {
+		token = string(tokenB)
+	}
+
 	client := pb.NewGkeeperClient(conn)
 
 	if registerFlag != "" {
@@ -50,7 +57,7 @@ func run(ctx context.Context) (err error) {
 		if len(args) != 2 {
 			return errors.New("wrong number of arguments, should be <username, password>")
 		}
-		re := regexp.MustCompile("[0-9][a-z][A-Z]+")
+		re := regexp.MustCompile("^[a-zA-Z0-9]+$")
 		if !re.MatchString(args[0]) {
 			return errors.New("wrong username, only letters & digits allowed [0-9][a-z][A-Z]")
 		}
@@ -64,12 +71,19 @@ func run(ctx context.Context) (err error) {
 		if len(args) != 2 {
 			return errors.New("wrong number of arguments, should be <username, password>")
 		}
-		err = Login(ctx, client, args[0], args[1])
+		token := ""
+		token, err = Login(ctx, client, args[0], args[1])
+		if err := os.WriteFile("token.txt", []byte(token), 0666); err != nil {
+			return errors.New("can't write to token.txt")
+		}
 		return
 	}
 	if putTextFlag != "" {
 		err = PutText(ctx, client, putTextFlag)
 		return
+	}
+	if listFlag {
+		err
 	}
 
 	return
@@ -85,31 +99,35 @@ func AddUser(ctx context.Context, client pb.GkeeperClient, username, password st
 	return
 }
 
-func Login(ctx context.Context, client pb.GkeeperClient, username, password string) (err error) {
+func Login(ctx context.Context, client pb.GkeeperClient, username, password string) (token string, err error) {
 	req := &pb.LoginRequest{Username: username, Password: password, Metadata: metaFlag}
 	resp, err := client.LoginUser(ctx, req)
 	if err != nil {
 		return
 	}
-	token := resp.GetToken()
+	token = resp.GetToken()
 	if token == "" {
-		return errors.New("login did not return token")
+		return "", errors.New("login did not return token")
 	}
-	os.Setenv("Token", token)
+	// err = os.Setenv("Token", token)
+	// if err != nil {
+	// 	return
+	// }
 	models.Sugar.Debugf("%+v", resp.Reply)
 	return
 }
 
 func PutText(ctx context.Context, client pb.GkeeperClient, text string) (err error) {
 
-	token, exists := os.LookupEnv("Token")
-	if !exists {
+	// token, exists := os.LookupEnv("Token")
+	// if !exists {
+	if token == "" {
 		return errors.New("no token")
 	}
 
 	reqtxt := &pb.PutTextRequest{Token: token, Textdata: text, Metadata: metaFlag}
 	respt, err := client.PutText(ctx, reqtxt)
-	models.Sugar.Debugf("%+v", respt.Reply)
+	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
 
 	return
 }

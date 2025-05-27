@@ -11,6 +11,7 @@ import (
 )
 
 var metaFlag, registerFlag, loginFlag, putTextFlag, putFileFlag string
+var listFlag bool
 
 func initClient(ctx context.Context) (err error) {
 
@@ -26,9 +27,10 @@ func initClient(ctx context.Context) (err error) {
 	flag.StringVar(&loginFlag, "login", "", "login to Server, -login=\"userName,password\" divided by comma")
 	flag.StringVar(&putFileFlag, "putfile", "", "put file to storage, -putfile=\"filePath/filename\"")
 	flag.StringVar(&putTextFlag, "puttext", "", "put text to storage, -puttext=\"...your text...\"")
+	flag.BoolVar(&listFlag, "list", false, "list objects")
 	flag.Parse()
 
-	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" {
+	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" && putTextFlag == "" {
 		return errors.New("no any flag")
 	}
 
