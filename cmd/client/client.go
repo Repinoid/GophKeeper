@@ -39,6 +39,11 @@ func run(ctx context.Context) (err error) {
 	}
 	defer conn.Close()
 
+	// client := pb.NewGkeeperClient(conn)
+	// req := &pb.RegisterRequest{Username: "n77", Password: "passw"}
+	// resp, err := client.RegisterUser(ctx, req)
+	// log.Printf("%+v", resp)
+
 	client := pb.NewGkeeperClient(conn)
 	req := &pb.LoginRequest{Username: "n77", Password: "passw"}
 	resp, err := client.LoginUser(ctx, req)

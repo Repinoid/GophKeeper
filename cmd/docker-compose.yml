@@ -51,7 +51,7 @@ services:
         # same as in command
         target: /buckets
       # Copy TLS certs, Read Only mode
-      - ./certs:/root/.minio/certs:ro
+      - ./tls:/root/.minio/certs:ro
     healthcheck:
       test: [ "CMD", "curl", "-f", "https://localhost:9000/minio/health/live" ]
       interval: 30s
@@ -73,19 +73,19 @@ services:
 volumes:
   PgVolume:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      # /path/to/data
-      device: ./dbaser
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   # /path/to/data
+    #   device: ./dbaser
   pgadmin_data:
   S3Volume:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      # /path/to/data
-      device: ./S3Bucks  
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   # /path/to/data
+    #   device: ./S3Bucks  
 
 networks:
   localnet:
