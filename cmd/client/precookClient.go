@@ -30,7 +30,7 @@ func initClient(ctx context.Context) (err error) {
 	flag.BoolVar(&listFlag, "list", false, "list objects")
 	flag.Parse()
 
-	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" && putTextFlag == "" {
+	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" && putTextFlag == "" && !listFlag {
 		return errors.New("no any flag")
 	}
 

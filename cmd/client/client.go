@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/models"
@@ -83,7 +85,7 @@ func run(ctx context.Context) (err error) {
 		return
 	}
 	if listFlag {
-		err
+		err = GetListing(ctx, client)
 	}
 
 	return
@@ -128,6 +130,27 @@ func PutText(ctx context.Context, client pb.GkeeperClient, text string) (err err
 	reqtxt := &pb.PutTextRequest{Token: token, Textdata: text, Metadata: metaFlag}
 	respt, err := client.PutText(ctx, reqtxt)
 	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
+
+	return
+}
+
+func GetListing(ctx context.Context, client pb.GkeeperClient) (err error) {
+	if token == "" {
+		return errors.New("no token")
+	}
+	reqList := &pb.ListObjectsRequest{Token: token}
+	resp, err := client.ListObjects(ctx, reqList)
+	if err != nil {
+		models.Sugar.Debugf("No listing %v\n", err)
+		fmt.Printf("No listing %v\n", err)
+		return
+	}
+	fmt.Printf("%10s\t%10s\t%20s\t%s\n", "ID", "Data type", "created", "metadata")
+
+	list := resp.GetListing()
+	for _, v := range list {
+		fmt.Printf("%10d\t%10s\t%20s\t%s\n", v.GetId(), v.GetDataType(), (v.GetCreatedAt()).AsTime().Format(time.RFC3339), v.GetMetadata())
+	}
 
 	return
 }

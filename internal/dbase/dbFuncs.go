@@ -10,8 +10,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
+	pb "gorsovet/cmd/proto"
+
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AddUser запись нового юзера в таблицу
@@ -109,14 +113,7 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, 
 	return
 }
 
-type objListStruct struct {
-	Id        int32
-	Datatype  string
-	Metadata  string
-	CreatedAt time.Time
-}
-
-func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []objListStruct, err error) {
+func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []*pb.ObjectParams, err error) {
 
 	order := "SELECT id, datatype, metadata, user_created_at from DATAS WHERE username = $1 order by user_created_at ;"
 	rows, err := dataBase.DB.Query(ctx, order, username) //
@@ -126,18 +123,21 @@ func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (
 	}
 	defer rows.Close()
 
-	ols := objListStruct{}
-
 	for rows.Next() {
-		err = rows.Scan(&ols.Id, &ols.Datatype, &ols.Metadata, &ols.CreatedAt)
+		var pgTime time.Time
+		ols := pb.ObjectParams{}
+		err = rows.Scan(&ols.Id, &ols.DataType, &ols.Metadata, &pgTime)
 		if err != nil {
+			models.Sugar.Debugf("rows.Scan %+v\n", err)
 			return
 		}
-		listing = append(listing, ols)
+		ols.CreatedAt = timestamppb.New(pgTime)
+		listing = append(listing, &ols)
 	}
 	err = rows.Err()
-	if err != nil { // Err returns any error that occurred while reading. Err must only be called after the Rows is closed
-		models.Sugar.Debugf("db.Query %+v\n", err)
+	// Err returns any error that occurred while reading. Err must only be called after the Rows is closed
+	if err != nil {
+		models.Sugar.Debugf("err = rows.Err() %+v\n", err)
 		return
 	}
 

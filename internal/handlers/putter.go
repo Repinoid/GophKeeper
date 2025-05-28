@@ -15,7 +15,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (gk *GkeeperService) PutText(ctx context.Context, req *pb.PutTextRequest) (resp *pb.PutTextResponse, err error) {
@@ -105,27 +104,26 @@ func (gk *GkeeperService) ListObjects(ctx context.Context, req *pb.ListObjectsRe
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
 	if err != nil {
 		models.Sugar.Debugln(err)
-		response.Success = false
 		response.Reply = "ConnectToDB error"
-		return &response, err
+		return &response, status.Errorf(codes.FailedPrecondition, "%s %v", response.Reply, err)
 	}
 	defer db.CloseBase()
 
 	token := req.GetToken()
 	username, err := db.GetUserNameByToken(ctx, token)
 	if err != nil {
-		return &response, err
+		response.Reply = "bad GetUserNameByToken"
+		models.Sugar.Debugln(err)
+		return &response, status.Errorf(codes.Unauthenticated, "%s %v", response.Reply, err)
+
 	}
 
-	lists, err := db.GetObjectsList(ctx, username)
-
-	parama := make([]*pb.ObjectParams, len(lists))
-
-	for i, obj := range lists {
-		m := pb.ObjectParams{Id: obj.Id, DataType: obj.Datatype, Metadata: obj.Metadata, CreatedAt: timestamppb.New(obj.CreatedAt)}
-		parama[i] = &m
+	response.Listing, err = db.GetObjectsList(ctx, username)
+	if err != nil {
+		response.Reply = "bad GetObjectsList"
+		models.Sugar.Debugln(err)
+		return &response, status.Errorf(codes.Unimplemented, "%s %v", response.Reply, err)
 	}
-	response.Listing = parama
 	response.Success = true
 	response.Reply = "OK"
 
