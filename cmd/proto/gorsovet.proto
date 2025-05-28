@@ -13,7 +13,11 @@ service gkeeper {
   rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
   rpc UploadFile(stream Chunk) returns (stream Chunk);
+  rpc DownloadObject(stream Chunk) returns (stream Chunk);
 }
+
+//message 
+
 
 message Chunk {
   bytes content = 1;

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	pb "gorsovet/cmd/proto"
-	"gorsovet/internal/models"
 )
 
 func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
@@ -38,7 +37,7 @@ func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
 	}
 
 	// Send remaining chunks
-	resp := pb.Chunk{}
+	//resp := pb.Chunk{}
 	for {
 		n, err := file.Read(buffer)
 		if err == io.EOF {
@@ -55,13 +54,13 @@ func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
 		}
 
 		// Receive acknowledgment from server
-		re, err := stream.Recv()
+		_, err = stream.Recv()
 		if err != nil {
 			return err
 		}
-		resp = *re
+		//		resp = *re
 	}
-	models.Sugar.Debugf("%s", resp.Content)
+	//	models.Sugar.Debugf("%s", resp.Content)
 
 	return stream.CloseSend()
 }
