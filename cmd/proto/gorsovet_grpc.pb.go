@@ -21,6 +21,7 @@ type GkeeperClient interface {
 	RegisterUser(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	PutText(ctx context.Context, in *PutTextRequest, opts ...grpc.CallOption) (*PutTextResponse, error)
+	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 }
 
@@ -59,6 +60,15 @@ func (c *gkeeperClient) PutText(ctx context.Context, in *PutTextRequest, opts ..
 	return out, nil
 }
 
+func (c *gkeeperClient) PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error) {
+	out := new(PutFileResponse)
+	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/PutFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gkeeperClient) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error) {
 	out := new(ListObjectsResponse)
 	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/ListObjects", in, out, opts...)
@@ -75,6 +85,7 @@ type GkeeperServer interface {
 	RegisterUser(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	LoginUser(context.Context, *LoginRequest) (*LoginResponse, error)
 	PutText(context.Context, *PutTextRequest) (*PutTextResponse, error)
+	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	mustEmbedUnimplementedGkeeperServer()
 }
@@ -91,6 +102,9 @@ func (UnimplementedGkeeperServer) LoginUser(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedGkeeperServer) PutText(context.Context, *PutTextRequest) (*PutTextResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutText not implemented")
+}
+func (UnimplementedGkeeperServer) PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutFile not implemented")
 }
 func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
@@ -162,6 +176,24 @@ func _Gkeeper_PutText_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gkeeper_PutFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GkeeperServer).PutFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gorsovet.gkeeper/PutFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GkeeperServer).PutFile(ctx, req.(*PutFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListObjectsRequest)
 	if err := dec(in); err != nil {
@@ -198,6 +230,10 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PutText",
 			Handler:    _Gkeeper_PutText_Handler,
+		},
+		{
+			MethodName: "PutFile",
+			Handler:    _Gkeeper_PutFile_Handler,
 		},
 		{
 			MethodName: "ListObjects",

@@ -10,6 +10,7 @@ service gkeeper {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
   rpc PutText (PutTextRequest) returns (PutTextResponse) {}
+  rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
 }
 
@@ -43,6 +44,18 @@ message PutTextRequest {
   string metadata = 3;
 }
 message PutTextResponse {
+  bool    success = 1;
+  int32   object_id = 2;
+  string  reply = 3;
+  int64   size = 4;
+}
+
+message PutFileRequest {
+  string token = 1;
+  string filename = 2;
+  string metadata = 3;
+}
+message PutFileResponse {
   bool    success = 1;
   int32   object_id = 2;
   string  reply = 3;
