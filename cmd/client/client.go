@@ -87,14 +87,16 @@ func run(ctx context.Context) (err error) {
 	}
 	if putFileFlag != "" {
 
-		stream, err := client.UploadFile(ctx)
+		//		stream, err := client.UploadFile(ctx)
+		stream, err := client.ProbaFunc(ctx) //, &pb.Chunk{Filename: putFileFlag})
 		if err != nil {
 			models.Sugar.Debugf("client.UploadFile %v", err)
 			return err
 		}
 
 		// Send a file
-		err = sendFile(stream, putFileFlag)
+		err = sFile(stream, putFileFlag)
+		//		err = sendFile(stream, putFileFlag)
 		if err != nil {
 			models.Sugar.Debugf("error sending file: %v", err)
 			return err

@@ -24,7 +24,7 @@ type GkeeperClient interface {
 	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_UploadFileClient, error)
-	ProbaFunc(ctx context.Context, in *Chunk, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error)
+	ProbaFunc(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error)
 }
 
 type gkeeperClient struct {
@@ -111,23 +111,18 @@ func (x *gkeeperUploadFileClient) Recv() (*Chunk, error) {
 	return m, nil
 }
 
-func (c *gkeeperClient) ProbaFunc(ctx context.Context, in *Chunk, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error) {
+func (c *gkeeperClient) ProbaFunc(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error) {
 	stream, err := c.cc.NewStream(ctx, &Gkeeper_ServiceDesc.Streams[1], "/gorsovet.gkeeper/ProbaFunc", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &gkeeperProbaFuncClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
 	return x, nil
 }
 
 type Gkeeper_ProbaFuncClient interface {
-	Recv() (*Chunk, error)
+	Send(*Chunk) error
+	CloseAndRecv() (*Chunk, error)
 	grpc.ClientStream
 }
 
@@ -135,7 +130,14 @@ type gkeeperProbaFuncClient struct {
 	grpc.ClientStream
 }
 
-func (x *gkeeperProbaFuncClient) Recv() (*Chunk, error) {
+func (x *gkeeperProbaFuncClient) Send(m *Chunk) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *gkeeperProbaFuncClient) CloseAndRecv() (*Chunk, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	m := new(Chunk)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -153,7 +155,7 @@ type GkeeperServer interface {
 	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	UploadFile(Gkeeper_UploadFileServer) error
-	ProbaFunc(*Chunk, Gkeeper_ProbaFuncServer) error
+	ProbaFunc(Gkeeper_ProbaFuncServer) error
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -179,7 +181,7 @@ func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsReque
 func (UnimplementedGkeeperServer) UploadFile(Gkeeper_UploadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedGkeeperServer) ProbaFunc(*Chunk, Gkeeper_ProbaFuncServer) error {
+func (UnimplementedGkeeperServer) ProbaFunc(Gkeeper_ProbaFuncServer) error {
 	return status.Errorf(codes.Unimplemented, "method ProbaFunc not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
@@ -312,15 +314,12 @@ func (x *gkeeperUploadFileServer) Recv() (*Chunk, error) {
 }
 
 func _Gkeeper_ProbaFunc_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Chunk)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(GkeeperServer).ProbaFunc(m, &gkeeperProbaFuncServer{stream})
+	return srv.(GkeeperServer).ProbaFunc(&gkeeperProbaFuncServer{stream})
 }
 
 type Gkeeper_ProbaFuncServer interface {
-	Send(*Chunk) error
+	SendAndClose(*Chunk) error
+	Recv() (*Chunk, error)
 	grpc.ServerStream
 }
 
@@ -328,8 +327,16 @@ type gkeeperProbaFuncServer struct {
 	grpc.ServerStream
 }
 
-func (x *gkeeperProbaFuncServer) Send(m *Chunk) error {
+func (x *gkeeperProbaFuncServer) SendAndClose(m *Chunk) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func (x *gkeeperProbaFuncServer) Recv() (*Chunk, error) {
+	m := new(Chunk)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // Gkeeper_ServiceDesc is the grpc.ServiceDesc for Gkeeper service.
@@ -370,7 +377,7 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ProbaFunc",
 			Handler:       _Gkeeper_ProbaFunc_Handler,
-			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "proto/gorsovet.proto",

@@ -18,7 +18,8 @@ import (
 )
 
 // Gkeeper_ProbaFuncServer
-func (gk *GkeeperService) ProbaFunc(req *pb.Chunk, stream pb.Gkeeper_ProbaFuncClient) (err error) {
+// func (gk *GkeeperService) ProbaFunc(req *pb.Chunk, stream pb.Gkeeper_ProbaFuncServer) (err error) {
+func (gk *GkeeperService) ProbaFunc(stream pb.Gkeeper_ProbaFuncServer) (err error) {
 	ctx := context.Background()
 	fname := req.GetFilename()
 	token := req.GetToken()
