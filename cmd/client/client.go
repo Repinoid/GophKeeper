@@ -86,8 +86,22 @@ func run(ctx context.Context) (err error) {
 		return
 	}
 	if putFileFlag != "" {
-		err = PutFile(ctx, client, putFileFlag)
-		return
+
+		stream, err := client.UploadFile(ctx)
+		if err != nil {
+			models.Sugar.Debugf("client.UploadFile %v", err)
+			return err
+		}
+
+		// Send a file
+		err = sendFile(stream, putFileFlag)
+		if err != nil {
+			models.Sugar.Debugf("error sending file: %v", err)
+			return err
+		}
+
+		//err = PutFile(ctx, client, putFileFlag)
+		return err
 	}
 
 	if listFlag {

@@ -12,7 +12,16 @@ service gkeeper {
   rpc PutText (PutTextRequest) returns (PutTextResponse) {}
   rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
+  rpc UploadFile(stream Chunk) returns (stream Chunk);
 }
+
+message Chunk {
+  bytes content = 1;
+  string filename = 2;
+  string token = 3;
+  string metadata = 4;
+}
+
 
 message RegisterRequest {
   string username = 1;
@@ -78,3 +87,4 @@ message ListObjectsResponse {
   repeated objectParams listing = 2;
   string reply = 3;
 }
+

@@ -103,7 +103,7 @@ func (gk *GkeeperService) PutFile(ctx context.Context, req *pb.PutFileRequest) (
 	// по умолчанию неуспех
 	response := pb.PutFileResponse{Success: false, Reply: "Could not put text"}
 
-	// сначала проверяем на наличие файла
+	// 
 	fname := req.GetFilename()
 	fileContent := req.GetData()
 

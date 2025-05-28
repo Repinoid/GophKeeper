@@ -23,6 +23,7 @@ type GkeeperClient interface {
 	PutText(ctx context.Context, in *PutTextRequest, opts ...grpc.CallOption) (*PutTextResponse, error)
 	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
+	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_UploadFileClient, error)
 }
 
 type gkeeperClient struct {
@@ -78,6 +79,37 @@ func (c *gkeeperClient) ListObjects(ctx context.Context, in *ListObjectsRequest,
 	return out, nil
 }
 
+func (c *gkeeperClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_UploadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Gkeeper_ServiceDesc.Streams[0], "/gorsovet.gkeeper/UploadFile", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &gkeeperUploadFileClient{stream}
+	return x, nil
+}
+
+type Gkeeper_UploadFileClient interface {
+	Send(*Chunk) error
+	Recv() (*Chunk, error)
+	grpc.ClientStream
+}
+
+type gkeeperUploadFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *gkeeperUploadFileClient) Send(m *Chunk) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *gkeeperUploadFileClient) Recv() (*Chunk, error) {
+	m := new(Chunk)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GkeeperServer is the server API for Gkeeper service.
 // All implementations must embed UnimplementedGkeeperServer
 // for forward compatibility
@@ -87,6 +119,7 @@ type GkeeperServer interface {
 	PutText(context.Context, *PutTextRequest) (*PutTextResponse, error)
 	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
+	UploadFile(Gkeeper_UploadFileServer) error
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -108,6 +141,9 @@ func (UnimplementedGkeeperServer) PutFile(context.Context, *PutFileRequest) (*Pu
 }
 func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
+}
+func (UnimplementedGkeeperServer) UploadFile(Gkeeper_UploadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
 
@@ -212,6 +248,32 @@ func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gkeeper_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GkeeperServer).UploadFile(&gkeeperUploadFileServer{stream})
+}
+
+type Gkeeper_UploadFileServer interface {
+	Send(*Chunk) error
+	Recv() (*Chunk, error)
+	grpc.ServerStream
+}
+
+type gkeeperUploadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *gkeeperUploadFileServer) Send(m *Chunk) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *gkeeperUploadFileServer) Recv() (*Chunk, error) {
+	m := new(Chunk)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Gkeeper_ServiceDesc is the grpc.ServiceDesc for Gkeeper service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,6 +302,13 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Gkeeper_ListObjects_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UploadFile",
+			Handler:       _Gkeeper_UploadFile_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "proto/gorsovet.proto",
 }
