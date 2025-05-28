@@ -9,7 +9,7 @@ import (
 	pb "gorsovet/cmd/proto"
 )
 
-func sFile(stream pb.Gkeeper_ProbaFuncClient, fpath string) (err error) {
+func sFile1(stream pb.Gkeeper_ProbaFuncClient, fpath string) (err error) {
 
 	if token == "" {
 		return errors.New("no token")
@@ -58,7 +58,8 @@ func sFile(stream pb.Gkeeper_ProbaFuncClient, fpath string) (err error) {
 
 	return //stream.CloseSend()
 }
-func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
+func sFile(stream pb.Gkeeper_ProbaFuncClient, fpath string) (err error) {
+//func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
 
 	if token == "" {
 		return errors.New("no token")
@@ -102,12 +103,12 @@ func sendFile(stream pb.Gkeeper_UploadFileClient, fpath string) error {
 			return err
 		}
 
-		// Receive acknowledgment from server
-		_, err = stream.Recv()
-		if err != nil {
-			return err
-		}
-		//		resp = *re
+		// // Receive acknowledgment from server
+		// _, err = stream.Recv()
+		// if err != nil {
+		// 	return err
+		// }
+		// //		resp = *re
 	}
 	//	models.Sugar.Debugf("%s", resp.Content)
 
