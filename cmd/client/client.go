@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -84,6 +85,11 @@ func run(ctx context.Context) (err error) {
 		err = PutText(ctx, client, putTextFlag)
 		return
 	}
+	if putFileFlag != "" {
+		err = PutFile(ctx, client, putFileFlag)
+		return
+	}
+
 	if listFlag {
 		err = GetListing(ctx, client)
 	}
@@ -129,6 +135,27 @@ func PutText(ctx context.Context, client pb.GkeeperClient, text string) (err err
 
 	reqtxt := &pb.PutTextRequest{Token: token, Textdata: text, Metadata: metaFlag}
 	respt, err := client.PutText(ctx, reqtxt)
+	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
+
+	return
+}
+
+func PutFile(ctx context.Context, client pb.GkeeperClient, fpath string) (err error) {
+	if token == "" {
+		return errors.New("no token")
+	}
+	fname := filepath.Base(fpath)
+	data, err := os.ReadFile(fpath)
+	if err != nil {
+		return err
+	}
+
+	reqtxt := &pb.PutFileRequest{Token: token, Filename: fname, Data: data, Metadata: metaFlag}
+	respt, err := client.PutFile(ctx, reqtxt)
+	if err != nil {
+		models.Sugar.Debugf("client.PutFile  %v\n", err)
+		return err
+	}
 	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
 
 	return

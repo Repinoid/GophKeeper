@@ -54,6 +54,7 @@ message PutFileRequest {
   string token = 1;
   string filename = 2;
   string metadata = 3;
+  bytes  data = 4;
 }
 message PutFileResponse {
   bool    success = 1;

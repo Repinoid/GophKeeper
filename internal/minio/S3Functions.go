@@ -83,7 +83,7 @@ func S3PutBytesToFile(ctx context.Context, minioClient *minio.Client,
 	if err != nil {
 		return
 	}
-	models.Sugar.Debugf("file written lenght %d\n", info.Size)
+	models.Sugar.Debugf("%d bytes was written\n", info.Size)
 	// Check if file exists on minio
 	_, err = minioClient.StatObject(ctx, bucketName, objectName, minio.StatObjectOptions{ServerSideEncryption: sse})
 	return

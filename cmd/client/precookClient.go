@@ -27,7 +27,7 @@ func initClient(ctx context.Context) (err error) {
 	flag.StringVar(&loginFlag, "login", "", "login to Server, -login=\"userName,password\" divided by comma")
 	flag.StringVar(&putFileFlag, "putfile", "", "put file to storage, -putfile=\"filePath/filename\"")
 	flag.StringVar(&putTextFlag, "puttext", "", "put text to storage, -puttext=\"...your text...\"")
-	flag.BoolVar(&listFlag, "list", false, "list objects")
+	flag.BoolVar(&listFlag, "list", false, "list objects, -list")
 	flag.Parse()
 
 	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" && putTextFlag == "" && !listFlag {
