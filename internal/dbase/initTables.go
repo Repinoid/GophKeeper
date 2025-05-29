@@ -3,6 +3,7 @@ package dbase
 import (
 	"context"
 	"fmt"
+	"gorsovet/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
