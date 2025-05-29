@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -88,16 +87,16 @@ func run(ctx context.Context) (err error) {
 	if putFileFlag != "" {
 
 		//		stream, err := client.UploadFile(ctx)
-		stream, err := client.ProbaFunc(ctx) //, &pb.Chunk{Filename: putFileFlag})
+		stream, err := client.Greceiver(ctx) //, &pb.Chunk{Filename: putFileFlag})
 		if err != nil {
 			models.Sugar.Debugf("client.UploadFile %v", err)
 			return err
 		}
 
 		// Send a file
-		err = sFile(stream, putFileFlag)
-		//		err = sendFile(stream, putFileFlag)
-		if err != nil {
+		resp, err := sendFile(stream, putFileFlag)
+
+		if err != nil || !resp.Success {
 			models.Sugar.Debugf("error sending file: %v", err)
 			return err
 		}
@@ -156,26 +155,26 @@ func PutText(ctx context.Context, client pb.GkeeperClient, text string) (err err
 	return
 }
 
-func PutFile(ctx context.Context, client pb.GkeeperClient, fpath string) (err error) {
-	if token == "" {
-		return errors.New("no token")
-	}
-	fname := filepath.Base(fpath)
-	data, err := os.ReadFile(fpath)
-	if err != nil {
-		return err
-	}
+// func PutFile(ctx context.Context, client pb.GkeeperClient, fpath string) (err error) {
+// 	if token == "" {
+// 		return errors.New("no token")
+// 	}
+// 	fname := filepath.Base(fpath)
+// 	data, err := os.ReadFile(fpath)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	reqtxt := &pb.PutFileRequest{Token: token, Filename: fname, Data: data, Metadata: metaFlag}
-	respt, err := client.PutFile(ctx, reqtxt)
-	if err != nil {
-		models.Sugar.Debugf("client.PutFile  %v\n", err)
-		return err
-	}
-	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
+// 	reqtxt := &pb.PutFileRequest{Token: token, Filename: fname, Data: data, Metadata: metaFlag}
+// 	respt, err := client.PutFile(ctx, reqtxt)
+// 	if err != nil {
+// 		models.Sugar.Debugf("client.PutFile  %v\n", err)
+// 		return err
+// 	}
+// 	models.Sugar.Debugf("%s written %d bytes\n", respt.Reply, respt.Size)
 
-	return
-}
+// 	return
+// }
 
 func GetListing(ctx context.Context, client pb.GkeeperClient) (err error) {
 	if token == "" {

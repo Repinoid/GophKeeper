@@ -21,10 +21,11 @@ type GkeeperClient interface {
 	RegisterUser(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	PutText(ctx context.Context, in *PutTextRequest, opts ...grpc.CallOption) (*PutTextResponse, error)
-	PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error)
+	//rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_UploadFileClient, error)
-	ProbaFunc(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error)
+	// от клиента серверу stream of Chunks, ответ обычный
+	Greceiver(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_GreceiverClient, error)
 }
 
 type gkeeperClient struct {
@@ -56,15 +57,6 @@ func (c *gkeeperClient) LoginUser(ctx context.Context, in *LoginRequest, opts ..
 func (c *gkeeperClient) PutText(ctx context.Context, in *PutTextRequest, opts ...grpc.CallOption) (*PutTextResponse, error) {
 	out := new(PutTextResponse)
 	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/PutText", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gkeeperClient) PutFile(ctx context.Context, in *PutFileRequest, opts ...grpc.CallOption) (*PutFileResponse, error) {
-	out := new(PutFileResponse)
-	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/PutFile", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,34 +103,34 @@ func (x *gkeeperUploadFileClient) Recv() (*Chunk, error) {
 	return m, nil
 }
 
-func (c *gkeeperClient) ProbaFunc(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_ProbaFuncClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Gkeeper_ServiceDesc.Streams[1], "/gorsovet.gkeeper/ProbaFunc", opts...)
+func (c *gkeeperClient) Greceiver(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_GreceiverClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Gkeeper_ServiceDesc.Streams[1], "/gorsovet.gkeeper/Greceiver", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &gkeeperProbaFuncClient{stream}
+	x := &gkeeperGreceiverClient{stream}
 	return x, nil
 }
 
-type Gkeeper_ProbaFuncClient interface {
-	Send(*Chunk) error
-	CloseAndRecv() (*Chunk, error)
+type Gkeeper_GreceiverClient interface {
+	Send(*ReceiverChunk) error
+	CloseAndRecv() (*ReceiverResponse, error)
 	grpc.ClientStream
 }
 
-type gkeeperProbaFuncClient struct {
+type gkeeperGreceiverClient struct {
 	grpc.ClientStream
 }
 
-func (x *gkeeperProbaFuncClient) Send(m *Chunk) error {
+func (x *gkeeperGreceiverClient) Send(m *ReceiverChunk) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *gkeeperProbaFuncClient) CloseAndRecv() (*Chunk, error) {
+func (x *gkeeperGreceiverClient) CloseAndRecv() (*ReceiverResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(Chunk)
+	m := new(ReceiverResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -152,10 +144,11 @@ type GkeeperServer interface {
 	RegisterUser(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	LoginUser(context.Context, *LoginRequest) (*LoginResponse, error)
 	PutText(context.Context, *PutTextRequest) (*PutTextResponse, error)
-	PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error)
+	//rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	UploadFile(Gkeeper_UploadFileServer) error
-	ProbaFunc(Gkeeper_ProbaFuncServer) error
+	// от клиента серверу stream of Chunks, ответ обычный
+	Greceiver(Gkeeper_GreceiverServer) error
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -172,17 +165,14 @@ func (UnimplementedGkeeperServer) LoginUser(context.Context, *LoginRequest) (*Lo
 func (UnimplementedGkeeperServer) PutText(context.Context, *PutTextRequest) (*PutTextResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutText not implemented")
 }
-func (UnimplementedGkeeperServer) PutFile(context.Context, *PutFileRequest) (*PutFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PutFile not implemented")
-}
 func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
 }
 func (UnimplementedGkeeperServer) UploadFile(Gkeeper_UploadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
-func (UnimplementedGkeeperServer) ProbaFunc(Gkeeper_ProbaFuncServer) error {
-	return status.Errorf(codes.Unimplemented, "method ProbaFunc not implemented")
+func (UnimplementedGkeeperServer) Greceiver(Gkeeper_GreceiverServer) error {
+	return status.Errorf(codes.Unimplemented, "method Greceiver not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
 
@@ -251,24 +241,6 @@ func _Gkeeper_PutText_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Gkeeper_PutFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutFileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GkeeperServer).PutFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gorsovet.gkeeper/PutFile",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GkeeperServer).PutFile(ctx, req.(*PutFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListObjectsRequest)
 	if err := dec(in); err != nil {
@@ -313,26 +285,26 @@ func (x *gkeeperUploadFileServer) Recv() (*Chunk, error) {
 	return m, nil
 }
 
-func _Gkeeper_ProbaFunc_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GkeeperServer).ProbaFunc(&gkeeperProbaFuncServer{stream})
+func _Gkeeper_Greceiver_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GkeeperServer).Greceiver(&gkeeperGreceiverServer{stream})
 }
 
-type Gkeeper_ProbaFuncServer interface {
-	SendAndClose(*Chunk) error
-	Recv() (*Chunk, error)
+type Gkeeper_GreceiverServer interface {
+	SendAndClose(*ReceiverResponse) error
+	Recv() (*ReceiverChunk, error)
 	grpc.ServerStream
 }
 
-type gkeeperProbaFuncServer struct {
+type gkeeperGreceiverServer struct {
 	grpc.ServerStream
 }
 
-func (x *gkeeperProbaFuncServer) SendAndClose(m *Chunk) error {
+func (x *gkeeperGreceiverServer) SendAndClose(m *ReceiverResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *gkeeperProbaFuncServer) Recv() (*Chunk, error) {
-	m := new(Chunk)
+func (x *gkeeperGreceiverServer) Recv() (*ReceiverChunk, error) {
+	m := new(ReceiverChunk)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -359,10 +331,6 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Gkeeper_PutText_Handler,
 		},
 		{
-			MethodName: "PutFile",
-			Handler:    _Gkeeper_PutFile_Handler,
-		},
-		{
 			MethodName: "ListObjects",
 			Handler:    _Gkeeper_ListObjects_Handler,
 		},
@@ -375,8 +343,8 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "ProbaFunc",
-			Handler:       _Gkeeper_ProbaFunc_Handler,
+			StreamName:    "Greceiver",
+			Handler:       _Gkeeper_Greceiver_Handler,
 			ClientStreams: true,
 		},
 	},

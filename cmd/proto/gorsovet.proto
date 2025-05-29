@@ -10,22 +10,34 @@ service gkeeper {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
   rpc PutText (PutTextRequest) returns (PutTextResponse) {}
-  rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
+  //rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
   rpc UploadFile(stream Chunk) returns (stream Chunk);
-  // от клиента серверу stream, ответ обычный
-  rpc ProbaFunc(stream Chunk) returns (Chunk);
+
+  // от клиента серверу stream of Chunks, ответ обычный
+  rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
 }
 
-//message 
-
-
+// Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
+message ReceiverChunk {
+  bytes content = 1;
+  string filename = 2;
+  string token = 3;
+  string metadata = 4;
+}
+message ReceiverResponse {
+  bool success = 1;
+  int32 size = 2;
+}
+// ----------
 message Chunk {
   bytes content = 1;
   string filename = 2;
   string token = 3;
   string metadata = 4;
 }
+
+
 
 
 message RegisterRequest {
