@@ -108,7 +108,7 @@ func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username s
 
 func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, dataType, fileKey, metaData string, fileSize int32) (err error) {
 
-	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData) VALUES ($1, $2, $3, $4, $5, $6) ;"
+	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) ;"
 	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	return
 }
