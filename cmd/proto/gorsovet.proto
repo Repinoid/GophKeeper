@@ -13,6 +13,15 @@ service gkeeper {
   rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
 
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
+  rpc RemoveObjects (RemoveObjectsRequest) returns (RemoveObjectsResponse) {}
+}
+
+message RemoveObjectsRequest {
+  int32 object_id = 1;
+}
+message RemoveObjectsResponse {
+  bool success = 1;
+  string reply = 2;
 }
 
 // Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
