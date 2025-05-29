@@ -18,6 +18,7 @@ service gkeeper {
 
 message RemoveObjectsRequest {
   int32 object_id = 1;
+  string token = 2;
 }
 message RemoveObjectsResponse {
   bool success = 1;

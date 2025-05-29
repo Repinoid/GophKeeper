@@ -112,6 +112,29 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, 
 	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	return
 }
+// RemoveObjects удаляет строку с id в таблице и возвращает имя файла, для удаления в S3
+func (dataBase *DBstruct) RemoveObjects(ctx context.Context, username string, id int32) (fileURL string, err error) {
+
+	tx, err := dataBase.DB.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error db.Begin  %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	order := "SELECT fileURL from DATAS WHERE username = $1 AND id = $2 ;"
+	row := tx.QueryRow(ctx, order, username, id)
+	urla := ""
+	err = row.Scan(&urla)
+	if err != nil {
+		return "", fmt.Errorf("row.Scan(&urla) %w", err)
+	}
+	order = "DELETE from DATAS WHERE username = $1 AND id = $2 ;"
+	_, err = tx.Exec(ctx, order, username, id)
+	if err != nil {
+		return "", fmt.Errorf("DELETE from DATAS %w", err)
+	}
+	return urla, tx.Commit(ctx)
+}
 
 func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []*pb.ObjectParams, err error) {
 
