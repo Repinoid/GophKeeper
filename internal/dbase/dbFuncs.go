@@ -112,6 +112,7 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, 
 	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	return
 }
+
 // RemoveObjects удаляет строку с id в таблице и возвращает имя файла, для удаления в S3
 func (dataBase *DBstruct) RemoveObjects(ctx context.Context, username string, id int32) (fileURL string, err error) {
 
@@ -136,6 +137,7 @@ func (dataBase *DBstruct) RemoveObjects(ctx context.Context, username string, id
 	return urla, tx.Commit(ctx)
 }
 
+// GetObjectsList list from DATAS table - список всех объектов юзера
 func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []*pb.ObjectParams, err error) {
 
 	order := "SELECT id, fileURL, datatype, metadata, user_created_at from DATAS WHERE username = $1 order by user_created_at ;"
@@ -164,5 +166,19 @@ func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (
 		return
 	}
 
+	return
+}
+
+func (dataBase *DBstruct) GetObjectIdParams(ctx context.Context, username string, id int32) (param *pb.ObjectParams, err error) {
+	obj := pb.ObjectParams{}
+
+	order := "SELECT fileURL, filekey, datatype, metadata from DATAS WHERE username = $1 AND id = $2 ORDER BY user_created_at ;"
+	row := dataBase.DB.QueryRow(ctx, order, username, id)
+
+	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata)
+	if err != nil {
+		models.Sugar.Debugf("row.Scan(&obj.Fileurl, %+v\n", err)
+		//	return
+	}
 	return
 }

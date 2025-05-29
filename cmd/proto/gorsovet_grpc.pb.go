@@ -22,6 +22,7 @@ type GkeeperClient interface {
 	LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
 	Greceiver(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_GreceiverClient, error)
+	Gsender(ctx context.Context, in *SenderRequest, opts ...grpc.CallOption) (Gkeeper_GsenderClient, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 	RemoveObjects(ctx context.Context, in *RemoveObjectsRequest, opts ...grpc.CallOption) (*RemoveObjectsResponse, error)
 }
@@ -86,6 +87,38 @@ func (x *gkeeperGreceiverClient) CloseAndRecv() (*ReceiverResponse, error) {
 	return m, nil
 }
 
+func (c *gkeeperClient) Gsender(ctx context.Context, in *SenderRequest, opts ...grpc.CallOption) (Gkeeper_GsenderClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Gkeeper_ServiceDesc.Streams[1], "/gorsovet.gkeeper/Gsender", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &gkeeperGsenderClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Gkeeper_GsenderClient interface {
+	Recv() (*SenderChunk, error)
+	grpc.ClientStream
+}
+
+type gkeeperGsenderClient struct {
+	grpc.ClientStream
+}
+
+func (x *gkeeperGsenderClient) Recv() (*SenderChunk, error) {
+	m := new(SenderChunk)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *gkeeperClient) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error) {
 	out := new(ListObjectsResponse)
 	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/ListObjects", in, out, opts...)
@@ -112,6 +145,7 @@ type GkeeperServer interface {
 	LoginUser(context.Context, *LoginRequest) (*LoginResponse, error)
 	// загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
 	Greceiver(Gkeeper_GreceiverServer) error
+	Gsender(*SenderRequest, Gkeeper_GsenderServer) error
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	RemoveObjects(context.Context, *RemoveObjectsRequest) (*RemoveObjectsResponse, error)
 	mustEmbedUnimplementedGkeeperServer()
@@ -129,6 +163,9 @@ func (UnimplementedGkeeperServer) LoginUser(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedGkeeperServer) Greceiver(Gkeeper_GreceiverServer) error {
 	return status.Errorf(codes.Unimplemented, "method Greceiver not implemented")
+}
+func (UnimplementedGkeeperServer) Gsender(*SenderRequest, Gkeeper_GsenderServer) error {
+	return status.Errorf(codes.Unimplemented, "method Gsender not implemented")
 }
 func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
@@ -211,6 +248,27 @@ func (x *gkeeperGreceiverServer) Recv() (*ReceiverChunk, error) {
 	return m, nil
 }
 
+func _Gkeeper_Gsender_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SenderRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GkeeperServer).Gsender(m, &gkeeperGsenderServer{stream})
+}
+
+type Gkeeper_GsenderServer interface {
+	Send(*SenderChunk) error
+	grpc.ServerStream
+}
+
+type gkeeperGsenderServer struct {
+	grpc.ServerStream
+}
+
+func (x *gkeeperGsenderServer) Send(m *SenderChunk) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListObjectsRequest)
 	if err := dec(in); err != nil {
@@ -276,6 +334,11 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Greceiver",
 			Handler:       _Gkeeper_Greceiver_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Gsender",
+			Handler:       _Gkeeper_Gsender_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "proto/gorsovet.proto",

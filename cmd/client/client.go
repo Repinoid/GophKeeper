@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -127,9 +128,29 @@ func run(ctx context.Context) (err error) {
 				(v.GetCreatedAt()).AsTime().Format(time.RFC3339), v.GetMetadata())
 		}
 	}
-
+	// remove record by it's id
 	if removeFlag != 0 {
 		err = Remover(ctx, client, removeFlag)
+		if err != nil {
+			models.Sugar.Debugf("Remover %v", err)
+			return err
+		}
+	}
+	//
+	if getFileFlag != 0 {
+		req := &pb.SenderRequest{ObjectId: int32(getFileFlag), Token: token}
+		stream, err := client.Gsender(ctx, req)
+		if err != nil {
+			models.Sugar.Debugf("client.Gsender %v", err)
+			return err
+		}
+		by, err := receiveFile(ctx, stream, req)
+		if err != nil {
+			models.Sugar.Debugf("receiveFile %v", err)
+			return err
+		}
+		fmt.Println(by)
+
 	}
 
 	return
@@ -175,8 +196,6 @@ func GetList(ctx context.Context, client pb.GkeeperClient) (list []*pb.ObjectPar
 }
 
 func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
-	// проверка на токен будет в GetList
-	//	list, err := GetList(ctx, client)
 	if token == "" {
 		return errors.New("no token")
 	}
@@ -192,5 +211,23 @@ func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
 		return fmt.Errorf("could not delete object number %d", id)
 	}
 
+	return
+}
+
+func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (fileContent []byte, err error) {
+	if token == "" {
+		return nil, errors.New("no token")
+	}
+	// Process subsequent chunks
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		fileContent = append(fileContent, chunk.GetContent()...)
+	}
 	return
 }

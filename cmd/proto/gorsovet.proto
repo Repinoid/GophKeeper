@@ -11,18 +11,22 @@ service gkeeper {
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
     // загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
   rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
+  rpc Gsender(SenderRequest) returns (stream SenderChunk);
 
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
   rpc RemoveObjects (RemoveObjectsRequest) returns (RemoveObjectsResponse) {}
 }
-
-message RemoveObjectsRequest {
-  int32 object_id = 1;
-  string token = 2;
-}
-message RemoveObjectsResponse {
+// передаётся номер объекта в таблице DATAS для получения
+message SenderRequest {
   bool success = 1;
-  string reply = 2;
+  int32 object_id = 2;
+  string token = 3;
+}
+message SenderChunk {
+  bytes content = 1;
+  string filename = 2;
+  string metadata = 4;
+  string dataType = 5;
 }
 
 // Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
@@ -99,6 +103,7 @@ message objectParams {
   string metadata = 4;
   google.protobuf.Timestamp created_at = 5;
   int32 size =6;
+  string filekey =7;
 }
 message ListObjectsResponse {
   bool    success = 1;
@@ -106,3 +111,11 @@ message ListObjectsResponse {
   string reply = 3;
 }
 
+message RemoveObjectsRequest {
+  int32 object_id = 1;
+  string token = 2;
+}
+message RemoveObjectsResponse {
+  bool success = 1;
+  string reply = 2;
+}

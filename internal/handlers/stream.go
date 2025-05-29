@@ -76,6 +76,9 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	// Requests specifying Server Side Encryption with Customer provided keys must be made over a secure connection.
 	// при использовании собственного ключа требует TLS клиент-сервер
 	sse, err := encrypt.NewSSEC(fileKey)
+	if err != nil {
+		return
+	}
 
 	// Process subsequent chunks
 	for {
