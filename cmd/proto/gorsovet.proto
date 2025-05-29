@@ -9,13 +9,10 @@ import "google/protobuf/timestamp.proto";
 service gkeeper {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
-  //rpc PutText (PutTextRequest) returns (PutTextResponse) {}
-  //rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
-  //rpc UploadFile(stream Chunk) returns (stream Chunk);
+    // загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
+  rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
 
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
-  // загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
-  rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
 }
 
 // Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
@@ -24,20 +21,12 @@ message ReceiverChunk {
   string filename = 2;
   string token = 3;
   string metadata = 4;
+  string dataType = 5;
 }
 message ReceiverResponse {
   bool success = 1;
   int32 size = 2;
 }
-// ----------
-message Chunk {
-  bytes content = 1;
-  string filename = 2;
-  string token = 3;
-  string metadata = 4;
-}
-
-
 
 
 message RegisterRequest {
@@ -95,9 +84,11 @@ message ListObjectsRequest {
 }
 message objectParams {
   int32 id = 1;
-  string dataType = 2;
-  string metadata = 3;
-  google.protobuf.Timestamp created_at = 4;
+  string fileurl = 2;
+  string dataType = 3;
+  string metadata = 4;
+  google.protobuf.Timestamp created_at = 5;
+  int32 size =6;
 }
 message ListObjectsResponse {
   bool    success = 1;

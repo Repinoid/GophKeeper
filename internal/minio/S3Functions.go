@@ -65,6 +65,15 @@ func CreateBucket(ctx context.Context, minioClient *minio.Client, bucketName str
 		return fmt.Errorf("bucket %s BucketExists error: %w", bucketName, err)
 	}
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+	if err != nil {
+		models.Sugar.Debugf("Bucket %s MakeBucket error: %v", bucketName, err)
+		return fmt.Errorf("bucket %s MakeBucket error: %w", bucketName, err)
+	}
+	// err = minioClient.EnableVersioning(ctx, bucketName)
+	// if err != nil {
+	// 	models.Sugar.Debugf("Bucket %s EnableVersioning error: %v", bucketName, err)
+	// 	return fmt.Errorf("bucket %s EnableVersioning error: %w", bucketName, err)
+	// }
 	return
 }
 

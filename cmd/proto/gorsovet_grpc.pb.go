@@ -20,9 +20,9 @@ const _ = grpc.SupportPackageIsVersion7
 type GkeeperClient interface {
 	RegisterUser(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
-	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 	// загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
 	Greceiver(ctx context.Context, opts ...grpc.CallOption) (Gkeeper_GreceiverClient, error)
+	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 }
 
 type gkeeperClient struct {
@@ -45,15 +45,6 @@ func (c *gkeeperClient) RegisterUser(ctx context.Context, in *RegisterRequest, o
 func (c *gkeeperClient) LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/LoginUser", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gkeeperClient) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error) {
-	out := new(ListObjectsResponse)
-	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/ListObjects", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +85,24 @@ func (x *gkeeperGreceiverClient) CloseAndRecv() (*ReceiverResponse, error) {
 	return m, nil
 }
 
+func (c *gkeeperClient) ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error) {
+	out := new(ListObjectsResponse)
+	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/ListObjects", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GkeeperServer is the server API for Gkeeper service.
 // All implementations must embed UnimplementedGkeeperServer
 // for forward compatibility
 type GkeeperServer interface {
 	RegisterUser(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	LoginUser(context.Context, *LoginRequest) (*LoginResponse, error)
-	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	// загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
 	Greceiver(Gkeeper_GreceiverServer) error
+	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -116,11 +116,11 @@ func (UnimplementedGkeeperServer) RegisterUser(context.Context, *RegisterRequest
 func (UnimplementedGkeeperServer) LoginUser(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoginUser not implemented")
 }
-func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
-}
 func (UnimplementedGkeeperServer) Greceiver(Gkeeper_GreceiverServer) error {
 	return status.Errorf(codes.Unimplemented, "method Greceiver not implemented")
+}
+func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListObjects not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
 
@@ -171,24 +171,6 @@ func _Gkeeper_LoginUser_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListObjectsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GkeeperServer).ListObjects(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gorsovet.gkeeper/ListObjects",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GkeeperServer).ListObjects(ctx, req.(*ListObjectsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Gkeeper_Greceiver_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(GkeeperServer).Greceiver(&gkeeperGreceiverServer{stream})
 }
@@ -213,6 +195,24 @@ func (x *gkeeperGreceiverServer) Recv() (*ReceiverChunk, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _Gkeeper_ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListObjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GkeeperServer).ListObjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gorsovet.gkeeper/ListObjects",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GkeeperServer).ListObjects(ctx, req.(*ListObjectsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // Gkeeper_ServiceDesc is the grpc.ServiceDesc for Gkeeper service.

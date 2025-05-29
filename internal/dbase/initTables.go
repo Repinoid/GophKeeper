@@ -80,6 +80,7 @@ func (dataBase *DBstruct) DataTableCreation(ctx context.Context) error {
 			"fileURL TEXT NOT NULL, " +
 			"datatype VARCHAR(20) NOT NULL, " +
 			"fileKey TEXT NOT NULL, " +
+			"fileSize int NOT NULL, " +
 			"metadata TEXT, " +
 			"user_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 

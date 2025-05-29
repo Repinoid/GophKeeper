@@ -106,16 +106,16 @@ func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username s
 	return
 }
 
-func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, dataType, fileKey, metaData string) (err error) {
+func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, dataType, fileKey, metaData string, fileSize int32) (err error) {
 
-	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData) VALUES ($1, $2, $3, $4, $5) ;"
-	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData)
+	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData) VALUES ($1, $2, $3, $4, $5, $6) ;"
+	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	return
 }
 
 func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (listing []*pb.ObjectParams, err error) {
 
-	order := "SELECT id, datatype, metadata, user_created_at from DATAS WHERE username = $1 order by user_created_at ;"
+	order := "SELECT id, fileURL, datatype, metadata, user_created_at from DATAS WHERE username = $1 order by user_created_at ;"
 	rows, err := dataBase.DB.Query(ctx, order, username) //
 	if err != nil {
 		models.Sugar.Debugf("db.Query %+v\n", err)
@@ -126,7 +126,7 @@ func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (
 	for rows.Next() {
 		var pgTime time.Time
 		ols := pb.ObjectParams{}
-		err = rows.Scan(&ols.Id, &ols.DataType, &ols.Metadata, &pgTime)
+		err = rows.Scan(&ols.Id, &ols.Fileurl, &ols.DataType, &ols.Metadata, &pgTime)
 		if err != nil {
 			models.Sugar.Debugf("rows.Scan %+v\n", err)
 			return

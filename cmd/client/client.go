@@ -84,13 +84,13 @@ func run(ctx context.Context) (err error) {
 	if putTextFlag != "" {
 		stream, err := client.Greceiver(ctx)
 		if err != nil {
-			models.Sugar.Debugf("client.UploadFile %v", err)
+			models.Sugar.Debugf("client.Greceiver %v", err)
 			return err
 		}
 		// Send text
 		resp, err := sendText(stream, putTextFlag)
 		if err != nil || !resp.Success {
-			models.Sugar.Debugf("error sending file: %v", err)
+			models.Sugar.Debugf("error sending text: %v", err)
 			return err
 		}
 		models.Sugar.Debugf("written %d bytes\n", resp.Size)
@@ -100,7 +100,7 @@ func run(ctx context.Context) (err error) {
 	if putFileFlag != "" {
 		stream, err := client.Greceiver(ctx)
 		if err != nil {
-			models.Sugar.Debugf("client.UploadFile %v", err)
+			models.Sugar.Debugf("client.Greceiver %v", err)
 			return err
 		}
 		// Send a file
@@ -145,7 +145,6 @@ func Login(ctx context.Context, client pb.GkeeperClient, username, password stri
 	return
 }
 
-
 func GetListing(ctx context.Context, client pb.GkeeperClient) (err error) {
 	if token == "" {
 		return errors.New("no token")
@@ -157,11 +156,12 @@ func GetListing(ctx context.Context, client pb.GkeeperClient) (err error) {
 		fmt.Printf("No listing %v\n", err)
 		return
 	}
-	fmt.Printf("%10s\t%10s\t%20s\t%s\n", "ID", "Data type", "created", "metadata")
+	fmt.Printf("%10s\t%20s\t%10s\t%15s\t%20s\t%s\n", "ID", "File URL", "Data type", "file size", "created", "metadata")
 
 	list := resp.GetListing()
 	for _, v := range list {
-		fmt.Printf("%10d\t%10s\t%20s\t%s\n", v.GetId(), v.GetDataType(), (v.GetCreatedAt()).AsTime().Format(time.RFC3339), v.GetMetadata())
+		fmt.Printf("%10d\t%20s\t%10s\t%15d\t%20s\t%s\n", v.GetId(), v.GetFileurl(), v.GetDataType(), v.GetSize(), 
+				(v.GetCreatedAt()).AsTime().Format(time.RFC3339), v.GetMetadata())
 	}
 
 	return
