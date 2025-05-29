@@ -178,7 +178,7 @@ func (dataBase *DBstruct) GetObjectIdParams(ctx context.Context, username string
 	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata)
 	if err != nil {
 		models.Sugar.Debugf("row.Scan(&obj.Fileurl, %+v\n", err)
-		//	return
+		return
 	}
-	return
+	return &obj, err
 }
