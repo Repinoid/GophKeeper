@@ -149,6 +149,7 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("receiveFile %v", err)
 			return err
 		}
+		// пока просто вывод на экран
 		fmt.Println(string(by))
 
 	}
