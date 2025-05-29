@@ -1,2 +1,6 @@
 
-![Блок схема](g.jpg)
+djn dd
+
+<img src="g.jpg" width="200" />
+
+sdfsdf
