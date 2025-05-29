@@ -9,12 +9,12 @@ import "google/protobuf/timestamp.proto";
 service gkeeper {
   rpc RegisterUser (RegisterRequest) returns (RegisterResponse) {}
   rpc LoginUser (LoginRequest) returns (LoginResponse) {}
-  rpc PutText (PutTextRequest) returns (PutTextResponse) {}
+  //rpc PutText (PutTextRequest) returns (PutTextResponse) {}
   //rpc PutFile (PutFileRequest) returns (PutFileResponse) {}
-  rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
-  rpc UploadFile(stream Chunk) returns (stream Chunk);
+  //rpc UploadFile(stream Chunk) returns (stream Chunk);
 
-  // от клиента серверу stream of Chunks, ответ обычный
+  rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
+  // загрузка на сервер. от клиента серверу stream of Chunks, ответ обычный
   rpc Greceiver(stream ReceiverChunk) returns (ReceiverResponse);
 }
 
