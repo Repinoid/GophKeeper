@@ -1,6 +1,6 @@
 
 djn dd
 
-<img src="g.jpg" width="200" />
+<img src="g.jpg" width="800" />
 
 sdfsdf
