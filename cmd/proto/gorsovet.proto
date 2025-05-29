@@ -27,6 +27,7 @@ message SenderChunk {
   string filename = 2;
   string metadata = 4;
   string dataType = 5;
+  int32 size = 6;
 }
 
 // Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
@@ -103,7 +104,7 @@ message objectParams {
   string metadata = 4;
   google.protobuf.Timestamp created_at = 5;
   int32 size =6;
-  string filekey =7;
+  string filekey = 7;
 }
 message ListObjectsResponse {
   bool    success = 1;

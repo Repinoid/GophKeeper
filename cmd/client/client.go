@@ -150,7 +150,7 @@ func run(ctx context.Context) (err error) {
 			return err
 		}
 		// пока просто вывод на экран
-		fmt.Println(string(by))
+		fmt.Printf("meta %s\n content %s\n", by.GetMetadata(), by.GetContent())
 
 	}
 
@@ -215,10 +215,22 @@ func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
 	return
 }
 
-func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (fileContent []byte, err error) {
+// func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (fileContent []byte, err error) {
+func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (chuvak *pb.SenderChunk, err error) {
 	if token == "" {
 		return nil, errors.New("no token")
 	}
+	chu := pb.SenderChunk{}
+	firstChunk, err := stream.Recv()
+	if err != nil {
+		models.Sugar.Debugf("stream.Recv()  %v", err)
+		return nil, err
+	}
+	chu.Content = firstChunk.GetContent()
+	chu.Filename = firstChunk.GetFilename()
+	chu.Metadata = firstChunk.GetMetadata()
+	chu.Size = firstChunk.GetSize()
+
 	// Process subsequent chunks
 	for {
 		chunk, err := stream.Recv()
@@ -228,7 +240,7 @@ func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.S
 		if err != nil {
 			return nil, err
 		}
-		fileContent = append(fileContent, chunk.GetContent()...)
+		chu.Content = append(chu.Content, chunk.GetContent()...)
 	}
-	return
+	return &chu, err
 }
