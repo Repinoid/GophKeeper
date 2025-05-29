@@ -49,7 +49,12 @@ func Run(ctx context.Context) (err error) {
 	//	grpcServer := grpc.NewServer()
 
 	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
+<<<<<<< HEAD
 	// reflection nice for grpcurl
+=======
+	// gRPC server with reflection enabled, which will allow tools like grpcurl to inspect
+	// your service without needing proto files.
+>>>>>>> origin/main
 	reflection.Register(grpcServer)
 
 	// Graceful shutdown channel
@@ -71,12 +76,15 @@ func Run(ctx context.Context) (err error) {
 		close(done)
 	}()
 
+<<<<<<< HEAD
 	log.Println("GRPC Server Started")
 	// если сервер не стартует, до дальше и делать нечего
+=======
+	log.Println("Server UP")
+>>>>>>> origin/main
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}
-
 	<-done
 	log.Println("Server stopped")
 

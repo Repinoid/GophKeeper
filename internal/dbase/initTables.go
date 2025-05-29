@@ -31,7 +31,7 @@ func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {
 	db := dataBase.DB
 	_, err := db.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS pgcrypto;") // расширение для хэширования паролей
 	if err != nil {
-		return fmt.Errorf("CREATE EXTENSION pgcrypto; %w", err)
+		return fmt.Errorf("error CREATE EXTENSION pgcrypto; %w", err)
 	}
 
 	creatorOrder :=
@@ -49,6 +49,7 @@ func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create USERS table. %w", err)
 	}
+	models.Sugar.Debugln("USERA table is created")
 	return nil
 }
 
