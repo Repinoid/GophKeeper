@@ -12,37 +12,49 @@ import (
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/handlers"
 	"gorsovet/internal/models"
+	"gorsovet/internal/privacy"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
 
-	logger, err := zap.NewDevelopment()
+	ctx := context.Background()
+	err := initServer(ctx)
 	if err != nil {
-		panic("cannot initialize zap")
+		models.Sugar.Fatalf("The Server could not start. Reason - %v", err)
 	}
-	defer logger.Sync()
-	models.Sugar = *logger.Sugar()
 
-	if err := Run(); err != nil {
+	if err = Run(ctx); err != nil {
 		log.Printf("Server Shutdown by syscall, ListenAndServe message -  %v\n", err)
 	}
 }
 
-func Run() (err error) {
+func Run(ctx context.Context) (err error) {
 
 	// во первЫх строках - если сеть не прослушивается, до дальше и делать нечего
 	listen, err := net.Listen("tcp", models.Gport)
 	if err != nil {
 		log.Fatal(err)
 	}
-	grpcServer := grpc.NewServer()
+	// сертификаты в папке tls, для сервера GRPC требует и публичный и приватный
+	creds, err := privacy.LoadTLSCredentials("../tls/public.crt", "../tls/private.key")
+	//	creds, err := privacy.LoadTLSCredentials("../tls/cert.pem", "../tls/key.pem")
+	if err != nil {
+		log.Fatalf("failed to load TLS credentials: %v", err)
+	}
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
+
+	//	grpcServer := grpc.NewServer()
+
 	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
+<<<<<<< HEAD
+	// reflection nice for grpcurl
+=======
 	// gRPC server with reflection enabled, which will allow tools like grpcurl to inspect
 	// your service without needing proto files.
+>>>>>>> origin/main
 	reflection.Register(grpcServer)
 
 	// Graceful shutdown channel
@@ -64,7 +76,12 @@ func Run() (err error) {
 		close(done)
 	}()
 
+<<<<<<< HEAD
+	log.Println("GRPC Server Started")
+	// если сервер не стартует, до дальше и делать нечего
+=======
 	log.Println("Server UP")
+>>>>>>> origin/main
 	if err := grpcServer.Serve(listen); err != nil {
 		log.Fatal(err)
 	}
@@ -73,3 +90,7 @@ func Run() (err error) {
 
 	return
 }
+
+//  openssl req -x509 -newkey rsa:4096 -keyout private.key -out public.crt -days 365 -nodes -subj "/CN=minio.local"
+
+//  openssl req -x509 -newkey rsa:4096 -keyout private.key -out public.crt -days 365 -nodes -subj "/CN=localhost"   -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
