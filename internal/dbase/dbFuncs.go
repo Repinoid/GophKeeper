@@ -113,7 +113,7 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, us
 		order = "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) ;"
 		_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	} else {
-
+		// begin transaction
 		tx, err := dataBase.DB.Begin(ctx)
 		if err != nil {
 			return fmt.Errorf("error db.Begin  %w", err)
@@ -129,13 +129,15 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, us
 			return fmt.Errorf("row.Scan(&urla) %w", err)
 		}
 		// получить имя бакета, может быть иным чем юзернейм
-		_, bucketname, err := dataBase.GetBucketKeyByUserName(ctx, username)
+		bucketName := ""
+		order = "SELECT bucketname from USERA WHERE username =  $1 ;"
+		row = tx.QueryRow(ctx, order, username)
+		err = row.Scan(&bucketName)
 		if err != nil {
-			models.Sugar.Debugf("bad GetBucketKeyByUserName %v", err)
-			return err
+			return fmt.Errorf("row.Scan(&bucketname) %w", err)
 		}
 		// удалить файл в бакете
-		err = minio.S3RemoveFile(ctx, models.MinioClient, bucketname, urla)
+		err = minio.S3RemoveFile(ctx, models.MinioClient, bucketName, urla)
 		if err != nil {
 			models.Sugar.Debugf("bad S3RemoveFile %v", err)
 			return err
