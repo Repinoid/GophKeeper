@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"io"
 	"os"
@@ -58,19 +56,11 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath string) (resp *pb.Receive
 	return
 }
 
-func sendText(stream pb.Gkeeper_GreceiverClient, text string) (resp *pb.ReceiverResponse, err error) {
+func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string) (resp *pb.ReceiverResponse, err error) {
 
 	if token == "" {
 		return nil, errors.New("no token")
 	}
-	// генерируем случайное имя файла, 8 байт, в HEX распухнет до 16 символов
-	forName := make([]byte, 8)
-	_, err = rand.Read(forName)
-	if err != nil {
-		return
-	}
-	// переводим в HEX
-	objectName := hex.EncodeToString(forName) + ".text"
 
 	reader := strings.NewReader(text)
 

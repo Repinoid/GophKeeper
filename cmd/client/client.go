@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -88,8 +90,17 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("client.Greceiver %v", err)
 			return err
 		}
+		// генерируем случайное имя файла, 8 байт, в HEX распухнет до 16 символов
+		forName := make([]byte, 8)
+		_, err = rand.Read(forName)
+		if err != nil {
+			return err
+		}
+		// переводим в HEX
+		objectName := hex.EncodeToString(forName) + ".text"
+
 		// Send text
-		resp, err := sendText(stream, putTextFlag)
+		resp, err := sendText(stream, putTextFlag, objectName)
 		if err != nil || !resp.Success {
 			models.Sugar.Debugf("error sending text: %v", err)
 			return err
@@ -150,7 +161,7 @@ func run(ctx context.Context) (err error) {
 			return err
 		}
 		// пока просто вывод на экран
-		fmt.Printf("meta %s\n content %s\n", by.GetMetadata(), by.GetContent())
+		fmt.Printf("file %s\nmeta %s\ncontent %s\n", by.GetFilename(), by.GetMetadata(), by.GetContent())
 
 	}
 
