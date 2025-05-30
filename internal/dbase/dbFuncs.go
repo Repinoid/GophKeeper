@@ -106,10 +106,17 @@ func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username s
 	return
 }
 
-func (dataBase *DBstruct) PutFileParams(ctx context.Context, username, fileURL, dataType, fileKey, metaData string, fileSize int32) (err error) {
-
-	order := "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) ;"
-	_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
+func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, username, fileURL, dataType, fileKey, metaData string, fileSize int32) (err error) {
+	order := ""
+	if object_id == 0 {
+		order = "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) ;"
+	} else {
+		order = "UPDATE DATAS SET fileURL=$1, dataType=$2, fileKey=$3, metaData=$4, filesize=$5 WHERE username=$6 AND id=$7 ;"
+	}
+	_, err = dataBase.DB.Exec(ctx, order, fileURL, dataType, fileKey, metaData, fileSize, username, object_id)
+	if err != nil {
+		models.Sugar.Debugf("PutFileParams %v\norder %s\n", err, order)
+	}
 	return
 }
 

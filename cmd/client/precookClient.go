@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag  string
-var removeFlag, getFileFlag int
+var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag string
+var removeFlag, getFileFlag, updateFlag int
 var listFlag bool
 
 func initClient(ctx context.Context) (err error) {
@@ -31,9 +31,10 @@ func initClient(ctx context.Context) (err error) {
 	flag.StringVar(&putTextFlag, "puttext", "", "put text to storage, -puttext=\"... your text ...\"")
 
 	flag.IntVar(&getFileFlag, "getfile", 0, "get record to storage, -getfile=<id of record>, take it by -list")
-	
+
 	flag.BoolVar(&listFlag, "list", false, "list objects, -list")
 	flag.IntVar(&removeFlag, "remove", 0, "remove object, -remove=object_id ")
+	flag.IntVar(&updateFlag, "update", 0, "update object, use with -put* -update=object_id, use with -put*")
 	flag.Parse()
 
 	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" &&

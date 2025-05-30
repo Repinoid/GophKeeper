@@ -37,6 +37,7 @@ message ReceiverChunk {
   string token = 3;
   string metadata = 4;
   string dataType = 5;
+  int32 object_id = 6 ;
 }
 message ReceiverResponse {
   bool success = 1;

@@ -26,7 +26,7 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath string) (resp *pb.Receive
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
 	// Send first chunk with filename etc
-	firstChunk := &pb.ReceiverChunk{Filename: fname, Token: token, Metadata: metaFlag, DataType: "file"}
+	firstChunk := &pb.ReceiverChunk{Filename: fname, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		return
@@ -67,7 +67,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string) (resp 
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
 	// Send first chunk with filename
-	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "text"}
+	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "text", ObjectId: int32(updateFlag)}
 	n, err := reader.Read(buffer)
 	if err != nil && err != io.EOF {
 		return

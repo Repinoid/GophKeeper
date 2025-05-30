@@ -27,7 +27,10 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	}
 	// get file name from first chunk
 	fname := firstChunk.GetFilename()
+	// dataType - тип записи, text file card
 	dataType := firstChunk.GetDataType()
+	// object_id номер записи в таблице для обновления, если 0 - то новая запись
+	object_id := firstChunk.GetObjectId()
 	// содержимое файла, из первого чанка. затем будем append последующие приходы
 	fileContent := firstChunk.GetContent()
 
@@ -101,7 +104,7 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	// переводим в HEX
 	objectKeyHex := hex.EncodeToString(objectKey)
 
-	err = db.PutFileParams(ctx, userName, fname, dataType, objectKeyHex, metadata, int32(info.Size))
+	err = db.PutFileParams(ctx, object_id, userName, fname, dataType, objectKeyHex, metadata, int32(info.Size))
 	if err != nil {
 		return
 	}
