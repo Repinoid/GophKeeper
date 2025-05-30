@@ -61,7 +61,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string) (resp 
 	if token == "" {
 		return nil, errors.New("no token")
 	}
-
+	
 	reader := strings.NewReader(text)
 
 	buffer := make([]byte, 64*1024) // 64KB chunks

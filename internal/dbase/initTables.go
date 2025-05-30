@@ -3,7 +3,6 @@ package dbase
 import (
 	"context"
 	"fmt"
-	"gorsovet/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -50,7 +49,7 @@ func (dataBase *DBstruct) UsersTableCreation(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create USERS table. %w", err)
 	}
-	models.Sugar.Debugln("USERA table is created")
+	//	models.Sugar.Debugln("USERA table is created")
 	return nil
 }
 
