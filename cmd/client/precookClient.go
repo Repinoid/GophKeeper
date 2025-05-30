@@ -30,7 +30,7 @@ func initClient(ctx context.Context) (err error) {
 	flag.StringVar(&putFileFlag, "putfile", "", "put file to storage, -putfile=\"filePath/filename\"")
 	flag.StringVar(&putTextFlag, "puttext", "", "put text to storage, -puttext=\"... your text ...\"")
 
-	flag.IntVar(&getFileFlag, "getfile", 0, "get record to storage, -getfile=<id of record>, take it by -list")
+	flag.IntVar(&getFileFlag, "record", 0, "show record parameters from storage, -record=<id of record>, take it by -list")
 
 	flag.BoolVar(&listFlag, "list", false, "list objects, -list")
 	flag.IntVar(&removeFlag, "remove", 0, "remove object, -remove=object_id ")

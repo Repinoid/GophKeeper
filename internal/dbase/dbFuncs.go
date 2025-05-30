@@ -110,10 +110,15 @@ func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username s
 func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, username, fileURL, dataType, fileKey, metaData string, fileSize int32) (err error) {
 	order := ""
 	if object_id == 0 {
-		order = "INSERT INTO DATAS(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) ;"
+		order = "INSERT INTO DATAS AS args(userName, fileURL, dataType, fileKey, metaData, fileSize) VALUES ($1, $2, $3, $4, $5, $6) "
+		// если для username файл fileURL уже существует, перезаписываем его, также ключ и тд.
+		// ON CONFLICT потому что (username, fileURL) - Primary Key
+		order += "ON CONFLICT (username, fileURL) DO UPDATE SET dataType=EXCLUDED.dataType, "
+		order += "fileKey=EXCLUDED.fileKey, metaData=EXCLUDED.metaData, fileSize=EXCLUDED.filesize ;"
 		_, err = dataBase.DB.Exec(ctx, order, username, fileURL, dataType, fileKey, metaData, fileSize)
 	} else {
-		// begin transaction
+		// при обновлении записи надо заменить все её поля в строке БД за исключением номера.
+		// И удалить прежний файл из бакета
 		tx, err := dataBase.DB.Begin(ctx)
 		if err != nil {
 			return fmt.Errorf("error db.Begin  %w", err)
@@ -218,10 +223,12 @@ func (dataBase *DBstruct) GetObjectsList(ctx context.Context, username string) (
 func (dataBase *DBstruct) GetObjectIdParams(ctx context.Context, username string, id int32) (param *pb.ObjectParams, err error) {
 	obj := pb.ObjectParams{}
 
-	order := "SELECT fileURL, filekey, datatype, metadata from DATAS WHERE username = $1 AND id = $2 ORDER BY user_created_at ;"
+	order := "SELECT fileURL, filekey, datatype, metadata, filesize, user_created_at from DATAS WHERE username = $1 AND id = $2 ORDER BY user_created_at ;"
 	row := dataBase.DB.QueryRow(ctx, order, username, id)
-
-	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata)
+	// для скана времени - напрямую в струкруту не получается
+	var pgTime time.Time
+	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata, &obj.Size, &pgTime)
+	obj.CreatedAt = timestamppb.New(pgTime)
 	if err != nil {
 		models.Sugar.Debugf("row.Scan(&obj.Fileurl, %+v\n", err)
 		return

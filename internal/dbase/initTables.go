@@ -76,14 +76,16 @@ func (dataBase *DBstruct) DataTableCreation(ctx context.Context) error {
 
 	creatorOrder :=
 		"CREATE TABLE IF NOT EXISTS DATAS" +
-			"(id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
+			"( id INT GENERATED ALWAYS AS IDENTITY, " +
 			"username VARCHAR(64) NOT NULL, " +
 			"fileURL TEXT NOT NULL, " +
 			"datatype VARCHAR(20) NOT NULL, " +
 			"fileKey TEXT NOT NULL, " +
 			"fileSize int NOT NULL, " +
 			"metadata TEXT, " +
-			"user_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+			"user_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+			// имя юзера и имя файла должны быть уникальными - в одной корзине нет одинаковых имён файлов
+			"PRIMARY KEY (username, fileURL) );"
 
 	_, err := db.Exec(ctx, creatorOrder)
 	if err != nil {

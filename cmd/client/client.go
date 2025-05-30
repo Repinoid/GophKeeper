@@ -155,13 +155,13 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("client.Gsender %v", err)
 			return err
 		}
-		by, err := receiveFile(ctx, stream, req)
+		by, err := receiveFile(stream)
 		if err != nil {
 			models.Sugar.Debugf("receiveFile %v", err)
 			return err
 		}
 		// пока просто вывод на экран
-		fmt.Printf("file %s\nmeta %s\ncontent %s\n", by.GetFilename(), by.GetMetadata(), by.GetContent())
+		fmt.Printf("file %s\nmeta %s\nsize %d\ncreated %s\n", by.GetFilename(), by.GetMetadata(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
 
 	}
 
@@ -226,8 +226,7 @@ func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
 	return
 }
 
-// func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (fileContent []byte, err error) {
-func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.SenderRequest) (chuvak *pb.SenderChunk, err error) {
+func receiveFile(stream pb.Gkeeper_GsenderClient) (chuvak *pb.SenderChunk, err error) {
 	if token == "" {
 		return nil, errors.New("no token")
 	}
@@ -241,6 +240,7 @@ func receiveFile(ctx context.Context, stream pb.Gkeeper_GsenderClient, req *pb.S
 	chu.Filename = firstChunk.GetFilename()
 	chu.Metadata = firstChunk.GetMetadata()
 	chu.Size = firstChunk.GetSize()
+	chu.CreatedAt = firstChunk.GetCreatedAt()
 
 	// Process subsequent chunks
 	for {

@@ -28,6 +28,8 @@ message SenderChunk {
   string metadata = 4;
   string dataType = 5;
   int32 size = 6;
+  google.protobuf.Timestamp created_at = 7;
+
 }
 
 // Chunk - для передачи данных content, в первом засыле ещё имя файла, под которым надо записать в S3, токен и метадата
