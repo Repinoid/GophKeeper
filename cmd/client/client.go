@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -141,6 +140,11 @@ func run(ctx context.Context) (err error) {
 	}
 	// remove record by it's id
 	if removeFlag != 0 {
+		fla := removeFlag // для kопипасты
+		if !IfIdExist(ctx, client, int32(fla)) {
+			fmt.Printf("no record with number %d\n", fla)
+			return fmt.Errorf("no record with number %d", fla)
+		}
 		err = Remover(ctx, client, removeFlag)
 		if err != nil {
 			models.Sugar.Debugf("Remover %v", err)
@@ -149,6 +153,12 @@ func run(ctx context.Context) (err error) {
 	}
 	//
 	if showFlag != 0 {
+		fla := showFlag
+		if !IfIdExist(ctx, client, int32(fla)) {
+			fmt.Printf("no record with number %d\n", fla)
+			return fmt.Errorf("no record with number %d", fla)
+		}
+
 		req := &pb.SenderRequest{ObjectId: int32(showFlag), Token: token}
 		stream, err := client.Gsender(ctx, req)
 		if err != nil {
@@ -166,6 +176,11 @@ func run(ctx context.Context) (err error) {
 	}
 	//
 	if getFileFlag != 0 {
+		fla := getFileFlag
+		if !IfIdExist(ctx, client, int32(fla)) {
+			fmt.Printf("no record with number %d\n", fla)
+			return fmt.Errorf("no record with number %d", fla)
+		}
 		req := &pb.SenderRequest{ObjectId: int32(getFileFlag), Token: token}
 		stream, err := client.Gsender(ctx, req)
 		if err != nil {
@@ -192,93 +207,4 @@ func run(ctx context.Context) (err error) {
 	}
 
 	return
-}
-
-func AddUser(ctx context.Context, client pb.GkeeperClient, username, password string) (err error) {
-	req := &pb.RegisterRequest{Username: username, Password: password, Metadata: metaFlag}
-	resp, err := client.RegisterUser(ctx, req)
-	if err != nil {
-		return
-	}
-	models.Sugar.Debugf("%+v", resp)
-	return
-}
-
-func Login(ctx context.Context, client pb.GkeeperClient, username, password string) (token string, err error) {
-	req := &pb.LoginRequest{Username: username, Password: password, Metadata: metaFlag}
-	resp, err := client.LoginUser(ctx, req)
-	if err != nil {
-		return
-	}
-	token = resp.GetToken()
-	if token == "" {
-		return "", errors.New("login did not return token")
-	}
-	models.Sugar.Debugf("%+v", resp.Reply)
-	return
-}
-
-func GetList(ctx context.Context, client pb.GkeeperClient) (list []*pb.ObjectParams, err error) {
-	if token == "" {
-		return nil, errors.New("no token")
-	}
-	reqList := &pb.ListObjectsRequest{Token: token}
-	resp, err := client.ListObjects(ctx, reqList)
-	if err != nil {
-		models.Sugar.Debugf("No listing %v\n", err)
-		fmt.Printf("No listing %v\n", err)
-		return
-	}
-	list = resp.GetListing()
-	return
-}
-
-func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
-	if token == "" {
-		return errors.New("no token")
-	}
-
-	req := &pb.RemoveObjectsRequest{ObjectId: int32(id), Token: token}
-	resp, err := client.RemoveObjects(ctx, req)
-	if err != nil {
-		models.Sugar.Debugf("No listing %v\n", err)
-		fmt.Printf("No listing %v\n", err)
-		return
-	}
-	if !resp.Success {
-		return fmt.Errorf("could not delete object number %d", id)
-	}
-
-	return
-}
-
-func receiveFile(stream pb.Gkeeper_GsenderClient) (chuvak *pb.SenderChunk, err error) {
-	if token == "" {
-		return nil, errors.New("no token")
-	}
-	chu := pb.SenderChunk{}
-	firstChunk, err := stream.Recv()
-	if err != nil {
-		models.Sugar.Debugf("stream.Recv()  %v", err)
-		return nil, err
-	}
-	chu.Content = firstChunk.GetContent()
-	chu.Filename = firstChunk.GetFilename()
-	chu.Metadata = firstChunk.GetMetadata()
-	chu.Size = firstChunk.GetSize()
-	chu.CreatedAt = firstChunk.GetCreatedAt()
-	chu.DataType = firstChunk.GetDataType()
-
-	// Process subsequent chunks
-	for {
-		chunk, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		chu.Content = append(chu.Content, chunk.GetContent()...)
-	}
-	return &chu, err
 }

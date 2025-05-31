@@ -41,7 +41,7 @@ func initClient(ctx context.Context) (err error) {
 	flag.Parse()
 
 	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" &&
-		putTextFlag == "" && getFileFlag == 0 && !listFlag && removeFlag == 0 && showFlag == 0{
+		putTextFlag == "" && getFileFlag == 0 && !listFlag && removeFlag == 0 && showFlag == 0 {
 		return errors.New("no any flag")
 	}
 
