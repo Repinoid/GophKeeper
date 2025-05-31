@@ -170,7 +170,7 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("receiveFile %v", err)
 			return err
 		}
-		fmt.Printf("file %s\nmeta %s\nof type %s\nsize %d\ncreated %s\n",
+		fmt.Printf("file:\t%s\nmeta:\t%s\ntype:\t%s\nsize:\t%d\ncreated:\t%s\n",
 			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
 		return nil
 	}
@@ -201,7 +201,7 @@ func run(ctx context.Context) (err error) {
 		if err := os.WriteFile(fileToSave, by.GetContent(), 0666); err != nil {
 			return errors.New("can't write to token.txt")
 		}
-		fmt.Printf("file %s\nmeta %s\nof type %s\nsize %d\ncreated %s\nsaved to %s\n",
+		fmt.Printf("file:\t%s\nmeta:\t%s\ntype:\t%s\nsize:\t%d\ncreated:\t%s\nsaved to:\t%s\n",
 			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339), fileToSave)
 		return nil
 	}
