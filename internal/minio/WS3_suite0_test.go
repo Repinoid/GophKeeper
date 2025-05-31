@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
@@ -53,21 +54,29 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 	// Запуск контейнера MINIO
 	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio",
-		ExposedPorts: []string{"9090/tcp"},
+		ExposedPorts: []string{"9000/tcp"},
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     "minioadmin",
 			"MINIO_ROOT_PASSWORD": "minioadmin",
-			"MINIO_ADDRESS":       ":9090",
+			//	"MINIO_ADDRESS":       ":9000",
 		},
-		Cmd: []string{"server", "--address", ":9090", "/data"},
+		Cmd: []string{"server", "--address", ":9000", "/data"},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{
 				absTLSPath + ":/root/.minio/certs:ro",
 			}
+			hostConfig.PortBindings = nat.PortMap{
+				"9000/tcp": []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: "9000", // Bind to same port on host
+					},
+				},
+			}
 		},
 		WaitingFor: wait.ForAll(
-			//			wait.ForLog("API:"),
-			wait.ForListeningPort("9090/tcp"),
+			wait.ForLog("API:"),
+			wait.ForListeningPort("9000/tcp"),
 		),
 	}
 
@@ -82,7 +91,7 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 	// Получение хоста и порта
 	host, err := minioContainer.Host(suite.ctx)
 	suite.Require().NoError(err)
-	port, err := minioContainer.MappedPort(suite.ctx, "9090")
+	port, err := minioContainer.MappedPort(suite.ctx, "9000")
 	suite.Require().NoError(err)
 	suite.minioContainer = minioContainer
 	Sugar.Debugf("PostgreSQL доступен по адресу: %s:%s", host, port.Port())
