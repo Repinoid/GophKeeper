@@ -21,7 +21,7 @@ func initServer(ctx context.Context) (err error) {
 
 	// S3 Create one client and reuse it (it's thread-safe)
 	// дескриптор S3, один на всех
-	models.MinioClient, err = minio.ConnectToS3()
+	models.MinioClient, err = minio.ConnectToS3(models.MinioEndpoint)
 	if err != nil {
 		models.Sugar.Fatalf("No connection with S3. %w", err)
 	}
@@ -45,4 +45,3 @@ func initServer(ctx context.Context) (err error) {
 	// ....
 	return
 }
-

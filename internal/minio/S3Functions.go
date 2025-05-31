@@ -17,9 +17,8 @@ import (
 )
 
 // ConnectToS3 - get TLS connection to MinIO
-func ConnectToS3() (client *minio.Client, err error) {
+func ConnectToS3(endpoint string) (client *minio.Client, err error) {
 
-	endpoint := "localhost:9000"
 	accessKey := "nail" // auth from docker-compose
 	secretKey := "password"
 	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
