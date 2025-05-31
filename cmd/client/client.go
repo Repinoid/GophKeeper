@@ -99,7 +99,7 @@ func run(ctx context.Context) (err error) {
 		objectName := hex.EncodeToString(forName) + ".text"
 
 		// Send text
-		resp, err := sendText(stream, putTextFlag, objectName)
+		resp, err := sendText(stream, putTextFlag, objectName, "text")
 		if err != nil || !resp.Success {
 			models.Sugar.Debugf("error sending text: %v", err)
 			return err
@@ -204,6 +204,11 @@ func run(ctx context.Context) (err error) {
 		fmt.Printf("file %s\nmeta %s\nof type %s\nsize %d\ncreated %s\nsaved to %s\n",
 			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339), fileToSave)
 		return nil
+	}
+	if putCardFlag != "" {
+		// TreatCard засылаем замаршаленные данные карты, в putCardFlag - введённые в CLI c флагом -putcard="...."
+		err = TreatCard(ctx, client, putCardFlag)
+		return err
 	}
 
 	return

@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/minio/minio-go/v7 v7.0.92
 	github.com/stretchr/testify v1.10.0
+	github.com/theplant/luhn v0.0.0-20170224032821-81a1a381387a
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6

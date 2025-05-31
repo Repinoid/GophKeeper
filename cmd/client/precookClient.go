@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag, fnameFlag string
+var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag, fnameFlag, putCardFlag string
 var removeFlag, getFileFlag, updateFlag, showFlag int
 var listFlag bool
 
@@ -29,6 +29,7 @@ func initClient(ctx context.Context) (err error) {
 
 	flag.StringVar(&putFileFlag, "putfile", "", "put file to storage, -putfile=\"filePath/filename\"")
 	flag.StringVar(&putTextFlag, "puttext", "", "put text to storage, -puttext=\"... your text ...\"")
+	flag.StringVar(&putCardFlag, "putcard", "", "put card to storage, -putcard=\"cardnumber digits,expiration MM/YY, CSV, cardholder name\"")
 
 	flag.IntVar(&showFlag, "show", 0, "show record parameters from storage, -show=<id of record>, take it by -list")
 	flag.IntVar(&getFileFlag, "get", 0, "download record to file, -get=<id of record> -file=\"filePath/filename\", if no -file flag - filename from storage")
@@ -41,7 +42,7 @@ func initClient(ctx context.Context) (err error) {
 	flag.Parse()
 
 	if metaFlag == "" && registerFlag == "" && loginFlag == "" && putFileFlag == "" &&
-		putTextFlag == "" && getFileFlag == 0 && !listFlag && removeFlag == 0 && showFlag == 0 {
+		putTextFlag == "" && getFileFlag == 0 && !listFlag && removeFlag == 0 && showFlag == 0 && putCardFlag == "" {
 		return errors.New("no any flag")
 	}
 

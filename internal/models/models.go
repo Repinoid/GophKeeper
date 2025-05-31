@@ -5,6 +5,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type Carda struct {
+	Number     int32  `json:"number"`
+	Expiration string `json:"expires"`
+	CSV        string `json:"csv"`
+	Holder     string `json:"holder"`
+}
+
 var (
 	MinioClient *minio.Client
 	Sugar       zap.SugaredLogger
