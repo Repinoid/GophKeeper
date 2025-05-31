@@ -25,7 +25,7 @@ func ConnectToS3() (client *minio.Client, err error) {
 	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
 
 	// // Load CA certificate
-	caCert, err := os.ReadFile("../tls/public.crt")
+	caCert, err := os.ReadFile(models.PublicCrt)
 	if err != nil {
 		return nil, fmt.Errorf("error reading CA certificate: %w", err)
 	}

@@ -60,6 +60,8 @@ func TestS3Suite(t *testing.T) {
 	testBase := new(TstS3)
 	testBase.ctx = context.Background()
 
+	models.PublicCrt = "../../cmd/tls/public.crt"
+
 	suite.Run(t, testBase)
 
 }

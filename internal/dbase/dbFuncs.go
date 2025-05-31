@@ -71,17 +71,6 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 	}
 	return
 }
-
-func (dataBase *DBstruct) PutToken(ctx context.Context, userName, token, metadata string) (err error) {
-	userName = strings.ToUpper(userName)
-	db := dataBase.DB
-
-	order := "INSERT INTO TOKENA(userName, token, metadata) VALUES ($1, $2, $3) ;"
-	_, err = db.Exec(ctx, order, userName, token, metadata)
-
-	return
-}
-
 // IfUserExists возвращает да или нет и id юзера
 func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool, uId int32) {
 	userName = strings.ToUpper(userName)
@@ -92,7 +81,18 @@ func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (ye
 	err := row.Scan(&uId)
 	return err == nil, uId
 }
+// PutToken to TOKENA table, with metadata
+func (dataBase *DBstruct) PutToken(ctx context.Context, userName, token, metadata string) (err error) {
+	userName = strings.ToUpper(userName)
+	db := dataBase.DB
 
+	order := "INSERT INTO TOKENA(userName, token, metadata) VALUES ($1, $2, $3) ;"
+	_, err = db.Exec(ctx, order, userName, token, metadata)
+
+	return
+}
+
+// 
 func (dataBase *DBstruct) GetUserNameByToken(ctx context.Context, token string) (username string, err error) {
 	order := "SELECT username from TOKENA WHERE token =  $1 ;"
 	row := dataBase.DB.QueryRow(ctx, order, token)
@@ -102,7 +102,7 @@ func (dataBase *DBstruct) GetUserNameByToken(ctx context.Context, token string) 
 
 func (dataBase *DBstruct) GetBucketKeyByUserName(ctx context.Context, username string) (bucketKey, bucketName string, err error) {
 	order := "SELECT bucketkey, bucketname from USERA WHERE username =  $1 ;"
-	row := dataBase.DB.QueryRow(ctx, order, username)
+	row := dataBase.DB.QueryRow(ctx, order, strings.ToUpper(username))
 	err = row.Scan(&bucketKey, &bucketName)
 	return
 }

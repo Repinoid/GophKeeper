@@ -21,4 +21,5 @@ var (
 	CryptoKey = []byte("conclave")
 	MasterKey = []byte("Masterkey")
 	JWTKey    = []byte("jwtjwtkey")
+	PublicCrt = "../tls/public.crt"
 )

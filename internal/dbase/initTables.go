@@ -18,7 +18,12 @@ func ConnectToDB(ctx context.Context, DBEndPoint string) (dataBase *DBstruct, er
 	//	baza, err := pgx.Connect(ctx, DBEndPoint)
 	baza, err := pgxpool.New(ctx, DBEndPoint)
 	if err != nil {
-		return nil, fmt.Errorf("can't connect to DB %s err %w", DBEndPoint, err)
+		return nil, fmt.Errorf("pgxpool.New can't connect to DB %s err %w", DBEndPoint, err)
+	}
+	// pgx.Connect возвращает err nil даже если базы не существует. так что пингуем
+	err = baza.Ping(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ping. can't connect to DB %s err %w", DBEndPoint, err)
 	}
 	dataBase = &DBstruct{DB: baza} // Initialize
 

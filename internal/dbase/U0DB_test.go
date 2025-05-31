@@ -12,11 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var Sugar zap.SugaredLogger
+
 type TstBase struct {
 	suite.Suite
-	t                 time.Time
-	ctx               context.Context
-	dataBase          *DBstruct
+	t   time.Time
+	ctx context.Context
+	//	dataBase          *DBstruct
 	DBEndPoint        string
 	postgresContainer testcontainers.Container
 }
@@ -58,7 +60,7 @@ func (suite *TstBase) SetupSuite() { // выполняется перед тес
 
 func (suite *TstBase) TearDownSuite() { // // выполняется после всех тестов
 	Sugar.Infof("Spent %v\n", time.Since(suite.t))
-	suite.dataBase.CloseBase()
+	//	suite.dataBase.CloseBase()
 	// прикрываем контейнер с БД
 	suite.postgresContainer.Terminate(suite.ctx)
 }
