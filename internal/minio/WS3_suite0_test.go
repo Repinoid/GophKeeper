@@ -53,34 +53,22 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 	// Запуск контейнера MINIO
 	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio",
-		ExposedPorts: []string{"9000/tcp"},
+		ExposedPorts: []string{"9090/tcp"},
 		Env: map[string]string{
-			//"MINIO_ROOT_PASSWORD": "nail",
-			//"MINIO_ROOT_USER":     "password",
 			"MINIO_ROOT_USER":     "minioadmin",
 			"MINIO_ROOT_PASSWORD": "minioadmin",
+			"MINIO_ADDRESS":       ":9090",
 		},
-		Cmd: []string{"server", "/data"},
-		// Mounts: []testcontainers.ContainerMount{
-		// 	testcontainers.BindMount(
-		// 		absTLSPath,
-		// 		"/root/.minio/certs",
-		// 	),
-		// },
+		Cmd: []string{"server", "--address", ":9090", "/data"},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{
 				absTLSPath + ":/root/.minio/certs:ro",
-				//"../../cmd/tls:/root/.minio/certs:ro",
-				//	"/host/path:/container/path:ro", // Read-only bind mount
-				//			"volume_name:/container/path",   // Named volume
 			}
 		},
-		//WaitingFor: wait.ForLog("API:"),
 		WaitingFor: wait.ForAll(
-			wait.ForLog("API:"),
-			wait.ForListeningPort("9000/tcp"),
+			//			wait.ForLog("API:"),
+			wait.ForListeningPort("9090/tcp"),
 		),
-		//WaitingFor: wait.ForListeningPort("9000/tcp").WithStartupTimeout(20 * time.Second),
 	}
 
 	minioContainer, err := testcontainers.GenericContainer(suite.ctx, testcontainers.GenericContainerRequest{
@@ -88,12 +76,13 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 		Started:          true,
 	})
 	suite.Require().NoError(err)
+	// Terminate в TearDownSuite, дефер не нужен
 	//	defer postgresContainer.Terminate(suite.ctx)
 
 	// Получение хоста и порта
 	host, err := minioContainer.Host(suite.ctx)
 	suite.Require().NoError(err)
-	port, err := minioContainer.MappedPort(suite.ctx, "9000")
+	port, err := minioContainer.MappedPort(suite.ctx, "9090")
 	suite.Require().NoError(err)
 	suite.minioContainer = minioContainer
 	Sugar.Debugf("PostgreSQL доступен по адресу: %s:%s", host, port.Port())
@@ -145,11 +134,8 @@ func TestS3Suite(t *testing.T) {
 // ConnectToS3 - get TLS connection to MinIO
 func ConnectToTestS3(endpoint string) (client *minio.Client, err error) {
 
-	//endpoint := models.MinioEndpoint
 	accessKey := "minioadmin" // auth from docker-compose
 	secretKey := "minioadmin"
-	//	accessKey := "nail" // auth from docker-compose
-	//	secretKey := "password"
 	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
 
 	// // Load CA certificate
