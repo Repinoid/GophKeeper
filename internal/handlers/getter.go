@@ -50,7 +50,9 @@ func (gk *GkeeperService) ListObjects(ctx context.Context, req *pb.ListObjectsRe
 	return &response, err
 }
 
+// RemoveObjects - удаление объекта
 func (gk *GkeeperService) RemoveObjects(ctx context.Context, req *pb.RemoveObjectsRequest) (resp *pb.RemoveObjectsResponse, err error) {
+	// по умолчанию - неудача, прописываем это в response
 	response := pb.RemoveObjectsResponse{Success: false, Reply: "Could not remove objects"}
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
 	if err != nil {
@@ -59,8 +61,10 @@ func (gk *GkeeperService) RemoveObjects(ctx context.Context, req *pb.RemoveObjec
 		return &response, status.Errorf(codes.FailedPrecondition, "%s %v", response.Reply, err)
 	}
 	defer db.CloseBase()
-
+	// токен передан в req(uest)
 	token := req.GetToken()
+
+	// GetUserNameByToken получаем имя юзера по токену (из таблицы TOKENA)
 	username, err := db.GetUserNameByToken(ctx, token)
 	if err != nil {
 		response.Reply = "bad GetUserNameByToken"
@@ -75,7 +79,7 @@ func (gk *GkeeperService) RemoveObjects(ctx context.Context, req *pb.RemoveObjec
 		models.Sugar.Debugln(err)
 		return &response, status.Errorf(codes.Unimplemented, "%s %v", response.Reply, err)
 	}
-	// получить имя бакета, может быть иным чем юзернейм
+	// получить имя бакета, может быть иным чем юзернейм, GetBucketKeyByUserName возвращает ключ шифрования и имя бакета, ключ здесь не нужен
 	_, bucketname, err := db.GetBucketKeyByUserName(ctx, username)
 	if err != nil {
 		response.Reply = "bad GetBucketKeyByUserName "
@@ -89,31 +93,34 @@ func (gk *GkeeperService) RemoveObjects(ctx context.Context, req *pb.RemoveObjec
 		models.Sugar.Debugln(err)
 		return &response, status.Errorf(codes.Unimplemented, "%s %v", response.Reply, err)
 	}
+	// если добрались до этой строчки, значит Ок, прописываем его в response и возвращаем
 	response.Success = true
 	response.Reply = "OK remove object"
 
-	return &response, err
+	return &response, nil
 
 }
 
+// Gsender - send данных из сервера в клиент
 func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_GsenderServer) (err error) {
 	ctx := context.Background()
-	response := pb.RemoveObjectsResponse{Success: false, Reply: "Could not get objects"}
+	//response := pb.RemoveObjectsResponse{Success: false, Reply: "Could not get objects"}
 
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
 	if err != nil {
 		models.Sugar.Debugln(err)
-		response.Reply = "ConnectToDB error"
-		return status.Errorf(codes.FailedPrecondition, "%s %v", response.Reply, err)
+	//	response.Reply = "ConnectToDB error"
+		return status.Errorf(codes.FailedPrecondition, "%s %v", "ConnectToDB error" , err)
+		//return status.Errorf(codes.FailedPrecondition, "%s %v", response.Reply, err)
 	}
 	defer db.CloseBase()
 
 	token := req.GetToken()
 	username, err := db.GetUserNameByToken(ctx, token)
 	if err != nil {
-		response.Reply = "bad GetUserNameByToken"
+	//	response.Reply = "bad GetUserNameByToken"
 		models.Sugar.Debugln(err)
-		return status.Errorf(codes.Unauthenticated, "%s %v", response.Reply, err)
+		return status.Errorf(codes.Unauthenticated, "%s %v", "bad GetUserNameByToken", err)
 	}
 	object_id := req.GetObjectId()
 	param, err := db.GetObjectIdParams(ctx, username, object_id)

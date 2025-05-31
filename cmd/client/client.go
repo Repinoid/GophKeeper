@@ -148,6 +148,23 @@ func run(ctx context.Context) (err error) {
 		}
 	}
 	//
+	if showFlag != 0 {
+		req := &pb.SenderRequest{ObjectId: int32(showFlag), Token: token}
+		stream, err := client.Gsender(ctx, req)
+		if err != nil {
+			models.Sugar.Debugf("client.Gsender %v", err)
+			return err
+		}
+		by, err := receiveFile(stream)
+		if err != nil {
+			models.Sugar.Debugf("receiveFile %v", err)
+			return err
+		}
+		fmt.Printf("file %s\nmeta %s\nof type %s\nsize %d\ncreated %s\n",
+			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
+		return nil
+	}
+	//
 	if getFileFlag != 0 {
 		req := &pb.SenderRequest{ObjectId: int32(getFileFlag), Token: token}
 		stream, err := client.Gsender(ctx, req)
@@ -160,9 +177,18 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("receiveFile %v", err)
 			return err
 		}
-		// пока просто вывод на экран
-		fmt.Printf("file %s\nmeta %s\nsize %d\ncreated %s\n", by.GetFilename(), by.GetMetadata(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
-
+		fileToSave := ""
+		if fnameFlag == "" {
+			fileToSave = by.GetFilename()
+		} else {
+			fileToSave = fnameFlag
+		}
+		if err := os.WriteFile(fileToSave, by.GetContent(), 0666); err != nil {
+			return errors.New("can't write to token.txt")
+		}
+		fmt.Printf("file %s\nmeta %s\nof type %s\nsize %d\ncreated %s\nsaved to %s\n",
+			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339), fileToSave)
+		return nil
 	}
 
 	return
@@ -241,6 +267,7 @@ func receiveFile(stream pb.Gkeeper_GsenderClient) (chuvak *pb.SenderChunk, err e
 	chu.Metadata = firstChunk.GetMetadata()
 	chu.Size = firstChunk.GetSize()
 	chu.CreatedAt = firstChunk.GetCreatedAt()
+	chu.DataType = firstChunk.GetDataType()
 
 	// Process subsequent chunks
 	for {
