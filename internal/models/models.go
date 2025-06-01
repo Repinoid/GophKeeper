@@ -23,4 +23,6 @@ var (
 	JWTKey        = []byte("jwtjwtkey")
 	PublicCrt     = "../tls/public.crt"
 	MinioEndpoint = "localhost:9000"
+	MinioUser     = "nail"
+	MinioPassword = "password"
 )

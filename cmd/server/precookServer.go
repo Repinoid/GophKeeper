@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"gorsovet/internal/dbase"
-	"gorsovet/internal/minio"
+	"gorsovet/internal/minios3"
 	"gorsovet/internal/models"
 	"log"
 
@@ -21,7 +21,7 @@ func initServer(ctx context.Context) (err error) {
 
 	// S3 Create one client and reuse it (it's thread-safe)
 	// дескриптор S3, один на всех
-	models.MinioClient, err = minio.ConnectToS3(models.MinioEndpoint)
+	models.MinioClient, err = minios3.ConnectToS3(models.MinioEndpoint, models.MinioUser, models.MinioPassword)
 	if err != nil {
 		models.Sugar.Fatalf("No connection with S3. %w", err)
 	}
@@ -42,6 +42,5 @@ func initServer(ctx context.Context) (err error) {
 	if err = db.DataTableCreation(ctx); err != nil {
 		return
 	}
-	// ....
 	return
 }

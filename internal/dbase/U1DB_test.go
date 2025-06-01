@@ -2,6 +2,8 @@ package dbase
 
 import (
 	"context"
+	"gorsovet/internal/minios3"
+	"gorsovet/internal/models"
 	"strings"
 )
 
@@ -35,7 +37,7 @@ func (suite *TstBase) Test00InitDB() {
 		suite.Run(tt.name, func() {
 			db, err := ConnectToDB(tt.ctx, tt.dbe)
 			if err != nil {
-				Sugar.Debugln(err)
+				models.Sugar.Debugln(err)
 			} else {
 				db.CloseBase()
 			}
@@ -106,9 +108,31 @@ func (suite *TstBase) Test03Tokens() {
 	db.CloseBase()
 }
 
-func (suite *TstBase) Test04Tokens() {
+func (suite *TstBase) Test04PutFileParams() {
 	db, err := ConnectToDB(suite.ctx, suite.DBEndPoint)
 	suite.Require().NoError(err)
-	
+
+	// номер записи 0 - новая запись, присвоится 1й номер
+	err = db.PutFileParams(suite.ctx, 0, "username", "fileURL", "dataType", "fileKey", "metaData", 1111)
+	suite.Require().NoError(err)
+
+	err = minios3.CreateBucket(suite.ctx, suite.minioClient, "username")
+	suite.Require().NoError(err)
+	// "username" here - bucket name
+	info, err := minios3.S3PutFile(suite.ctx, suite.minioClient, "username", "objectName", "cert.bat", suite.sse)
+	suite.Require().NoError(err)
+
+	// должна быть ошибка т.к. записи 7 нет
+	err = db.PutFileParams(suite.ctx, 7, "username", "fileURL", "dataType", "fileKey", "metaData", 1111)
+	suite.Require().Error(err)
+	err = db.PutFileParams(suite.ctx, 1, "username", "fileURL", "dataType", "fileKey", "metaData", int32(info.Size))
+	suite.Require().NoError(err)
+
+	_, err = db.RemoveObjects(suite.ctx, "username", 1)
+	suite.Require().NoError(err)
+	// remove removed - error
+	_, err = db.RemoveObjects(suite.ctx, "username", 1)
+	suite.Require().Error(err)
+
 	db.CloseBase()
 }

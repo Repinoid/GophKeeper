@@ -1,91 +1,69 @@
-package dbase
+package minios3
 
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"gorsovet/internal/models"
+	"log"
+	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"gorsovet/internal/minios3"
-	"gorsovet/internal/models"
-
-	"go.uber.org/zap"
-
 	"github.com/docker/docker/api/types/container"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 )
 
-type TstBase struct {
+type TstS3 struct {
 	suite.Suite
-	t   time.Time
-	ctx context.Context
-	//	dataBase          *DBstruct
-	DBEndPoint        string
-	postgresContainer testcontainers.Container
-
+	t           time.Time
+	ctx         context.Context
 	minioClient *minio.Client
 	// SSE-C (Server-Side Encryption with Customer-Provided Keys)
 	sse            encrypt.ServerSide
 	minioContainer testcontainers.Container
 }
 
-func (suite *TstBase) SetupSuite() { // выполняется перед тестами
+func (suite *TstS3) SetupSuite() { // выполняется перед тестами
+
 	suite.ctx = context.Background()
 	suite.t = time.Now()
 
-	// ***************** POSTGREs part begin ************************************
-	// Запуск контейнера PostgreSQL
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:17",
-		ExposedPorts: []string{"5432/tcp"},
-		Env: map[string]string{
-			"POSTGRES_PASSWORD": "testpass",
-			"POSTGRES_USER":     "testuser",
-			"POSTGRES_DB":       "testdb",
-		},
-		WaitingFor: wait.ForListeningPort("5432/tcp"),
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic("cannot initialize zap")
 	}
-
-	postgresContainer, err := testcontainers.GenericContainer(suite.ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	suite.Require().NoError(err)
-	//	defer postgresContainer.Terminate(suite.ctx)
-
-	// Получение хоста и порта
-	host, err := postgresContainer.Host(suite.ctx)
-	suite.Require().NoError(err)
-	port, err := postgresContainer.MappedPort(suite.ctx, "5432")
-	suite.Require().NoError(err)
-	suite.DBEndPoint = fmt.Sprintf("postgres://testuser:testpass@%s:%s/testdb", host, port.Port())
-	suite.postgresContainer = postgresContainer
-	models.Sugar.Debugf("PostgreSQL доступен по адресу: %s:%s", host, port.Port())
-	// ***************** POSTGREs part end ************************************
+	defer logger.Sync()
+	models.Sugar = *logger.Sugar() // init global Sugar
 
 	// ***************** MINIO part begin ************************************
 	absTLSPath, err := filepath.Abs("../../cmd/tls")
 	suite.Require().NoError(err)
 	// Запуск контейнера MINIO
-	reqm := testcontainers.ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio",
 		ExposedPorts: []string{"9000/tcp"},
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     "minioadmin", // default minioadmin s
 			"MINIO_ROOT_PASSWORD": "minioadmin",
-			//	"MINIO_ADDRESS":       ":9000",
+			"MINIO_ADDRESS":       ":9000",
 		},
 		// пробовал порт 9090, не получается, ищет 9000
 		Cmd: []string{"server", "--address", ":9000", "/data"},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{
 				absTLSPath + ":/root/.minio/certs:ro",
+				absTLSPath + ":/tls",
 			}
 			// hostConfig.PortBindings = nat.PortMap{
 			// 	"9000/tcp": []nat.PortBinding{
@@ -102,7 +80,7 @@ func (suite *TstBase) SetupSuite() { // выполняется перед тес
 		),
 	}
 	minioContainer, err := testcontainers.GenericContainer(suite.ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: reqm,
+		ContainerRequest: req,
 		Started:          true,
 	})
 	suite.Require().NoError(err)
@@ -110,12 +88,12 @@ func (suite *TstBase) SetupSuite() { // выполняется перед тес
 	//	defer postgresContainer.Terminate(suite.ctx)
 
 	// Получение хоста и порта
-	hostm, err := minioContainer.Host(suite.ctx)
+	host, err := minioContainer.Host(suite.ctx)
 	suite.Require().NoError(err)
-	portm, err := minioContainer.MappedPort(suite.ctx, "9000")
+	port, err := minioContainer.MappedPort(suite.ctx, "9000")
 	suite.Require().NoError(err)
 	suite.minioContainer = minioContainer
-	models.Sugar.Debugf("Minio доступен по адресу: %s:%s", hostm, portm.Port())
+	models.Sugar.Debugf("Minio доступен по адресу: %s:%s", host, port.Port())
 
 	// Generate your own encryption key (32 bytes)
 	key := make([]byte, 32)
@@ -131,24 +109,20 @@ func (suite *TstBase) SetupSuite() { // выполняется перед тес
 	//endpoint := fmt.Sprintf("%s:%s", host, port.Port())
 	endpoint, err := minioContainer.Endpoint(suite.ctx, "")
 	suite.Require().NoError(err)
-	suite.minioClient, err = minios3.ConnectToS3(endpoint, "minioadmin", "minioadmin")
+	suite.minioClient, err = ConnectToS3(endpoint, "minioadmin", "minioadmin")
 	suite.Require().NoError(err)
-	// клиент для функций минио в models.MinioClient
-	models.MinioClient = suite.minioClient
 	// ***************** MINIO part end ************************************
 
-	models.Sugar.Infoln("SetupTest() ---------------------")
+	log.Println("SetupTest() ---------------------")
 }
 
-func (suite *TstBase) TearDownSuite() { // // выполняется после всех тестов
-	models.Sugar.Infof("Spent %v\n", time.Since(suite.t))
-	//	suite.dataBase.CloseBase()
-	// прикрываем контейнер с БД
-	suite.postgresContainer.Terminate(suite.ctx)
+func (suite *TstS3) TearDownSuite() { // // выполняется после всех тестов
+	log.Printf("Spent %v\n", time.Since(suite.t))
+	suite.minioContainer.Terminate(suite.ctx)
 }
 
-func TestHandlersSuite(t *testing.T) {
-	testBase := new(TstBase)
+func TestS3Suite(t *testing.T) {
+	testBase := new(TstS3)
 	testBase.ctx = context.Background()
 
 	logger, err := zap.NewDevelopment()
@@ -158,7 +132,39 @@ func TestHandlersSuite(t *testing.T) {
 	defer logger.Sync()
 	models.Sugar = *logger.Sugar()
 
-	models.Sugar.Infoln("before run ....")
 	suite.Run(t, testBase)
+}
 
+// ConnectToS3 - get TLS connection to MinIO
+func ConnectToTestS3(endpoint string) (client *minio.Client, err error) {
+
+	accessKey := "minioadmin" // auth from docker-compose
+	secretKey := "minioadmin"
+	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
+
+	// // Load CA certificate
+	caCert, err := os.ReadFile(models.PublicCrt)
+	if err != nil {
+		return nil, fmt.Errorf("error reading CA certificate: %w", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// Configure TLS
+	tlsConfig := &tls.Config{
+		RootCAs:            caCertPool,
+		InsecureSkipVerify: false, // Set to true only for testing with self-signed certs
+	}
+
+	// Initialize minio client object with custom transport
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
+	return minio.New(endpoint, &minio.Options{
+		Creds:     credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure:    useSSL,
+		Transport: transport,
+	})
 }

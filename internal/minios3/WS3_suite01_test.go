@@ -1,4 +1,4 @@
-package minio
+package minios3
 
 import (
 	"bytes"

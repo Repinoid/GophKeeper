@@ -1,4 +1,4 @@
-package minio
+package minios3
 
 import (
 	"bytes"
@@ -17,10 +17,10 @@ import (
 )
 
 // ConnectToS3 - get TLS connection to MinIO
-func ConnectToS3(endpoint string) (client *minio.Client, err error) {
+func ConnectToS3(endpoint, accessKey, secretKey string) (client *minio.Client, err error) {
 
-	accessKey := "nail" // auth from docker-compose
-	secretKey := "password"
+	//accessKey := "nail" // auth from docker-compose
+	//secretKey := "password"
 	useSSL := true // false if no TLS, so endpoint prefix http:// (if true so TLS & https://)
 
 	// // Load CA certificate
@@ -147,7 +147,8 @@ func S3GetFileBytes(ctx context.Context, minioClient *minio.Client,
 func S3RemoveFile(ctx context.Context, minioClient *minio.Client, bucketName, objectName string) (err error) {
 	err = minioClient.RemoveObject(ctx, bucketName, objectName, minio.RemoveObjectOptions{})
 	models.Sugar.Debugf("S3RemoveFile %s from %s err %v\n", objectName, bucketName, err)
-	return
+	_ = err
+	return err
 }
 func S3RemoveBucket(ctx context.Context, minioClient *minio.Client, bucketName string) (err error) {
 	err = minioClient.RemoveBucket(ctx, bucketName)
