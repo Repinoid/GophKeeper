@@ -171,7 +171,7 @@ func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_Gsend
 
 	// Send first chunk with filename etc
 	firstChunk := &pb.SenderChunk{Filename: param.GetFileurl(), Metadata: param.GetMetadata(),
-		DataType: "file", Size: param.GetSize(), CreatedAt: param.GetCreatedAt()}
+		DataType: param.DataType, Size: param.GetSize(), CreatedAt: param.GetCreatedAt()}
 	n, err := reader.Read(buffer)
 	if err != nil && err != io.EOF {
 		return
