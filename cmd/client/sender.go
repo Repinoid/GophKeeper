@@ -4,18 +4,16 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	pb "gorsovet/cmd/proto"
 )
 
-func sendFile(stream pb.Gkeeper_GreceiverClient, fpath string) (resp *pb.ReceiverResponse, err error) {
+func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp *pb.ReceiverResponse, err error) {
 
 	if token == "" {
 		return nil, errors.New("no token")
 	}
-	fname := filepath.Base(fpath)
 
 	file, err := os.Open(fpath)
 	if err != nil {
@@ -26,7 +24,7 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath string) (resp *pb.Receive
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
 	// Send first chunk with filename etc
-	firstChunk := &pb.ReceiverChunk{Filename: fname, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
+	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		return
@@ -61,7 +59,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 	if token == "" {
 		return nil, errors.New("no token")
 	}
-	
+
 	reader := strings.NewReader(text)
 
 	buffer := make([]byte, 64*1024) // 64KB chunks

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -114,8 +115,19 @@ func run(ctx context.Context) (err error) {
 			models.Sugar.Debugf("client.Greceiver %v", err)
 			return err
 		}
+		// получаем имя файла без пути
+		fname := filepath.Base(putFileFlag)
+		// генерируем случайный префикс для имени файла, 4 байта, в HEX распухнет до 8 символов
+		forName := make([]byte, 8)
+		_, err = rand.Read(forName)
+		if err != nil {
+			return err
+		}
+		// переводим в HEX
+		objectName := hex.EncodeToString(forName) + "_" + fname
+
 		// Send a file
-		resp, err := sendFile(stream, putFileFlag)
+		resp, err := sendFile(stream, putFileFlag, objectName )
 
 		if err != nil || !resp.Success {
 			models.Sugar.Debugf("error sending file: %v", err)
