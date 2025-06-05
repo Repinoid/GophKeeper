@@ -2,17 +2,9 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
-	"strconv"
-	"strings"
-
-	"github.com/theplant/luhn"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/models"
@@ -122,62 +114,4 @@ func receiveFile(stream pb.Gkeeper_GsenderClient) (chuvak *pb.SenderChunk, err e
 		chu.Content = append(chu.Content, chunk.GetContent()...)
 	}
 	return &chu, err
-}
-
-func TreatCard(ctx context.Context, client pb.GkeeperClient, cardData string) (err error) {
-	args := strings.Split(cardData, ",")
-	if len(args) != 4 {
-		return errors.New("wrong number of arguments, should be cardnumber digits,expiration MM/YY, CSV, cardholder name\"")
-	}
-	cardNum := strings.ReplaceAll(args[0], " ", "")
-	cnumi, err := strconv.Atoi(cardNum)
-
-	if !luhn.Valid(cnumi) || err != nil {
-		return errors.New("wrong Card Number. Not real")
-	}
-	exp := strings.ReplaceAll(args[1], " ", "")
-	// should use raw string (`...`) with regexp.MustCompile to avoid having to escape twice (S1007)
-	re := regexp.MustCompile(`^\d\d/\d\d$`) // MM/YY
-	if !re.MatchString(exp) {
-		return errors.New("wrong Card Number. Not real")
-	}
-	csv := strings.ReplaceAll(args[2], " ", "")
-	re = regexp.MustCompile(`^\d\d\d$`) // CSV 3 digits
-	if !re.MatchString(csv) {
-		return errors.New("wrong CSV. Proposed to be 3 digits")
-	}
-	holder := strings.TrimSpace(args[3])
-	holder = strings.ReplaceAll(holder, "  ", " ")
-	re = regexp.MustCompile(`^[a-zA-Z\s]+$`)
-	if !re.MatchString(holder) {
-		fmt.Printf("this mazafaka does not exist. Only latin symbols are allowed %s\n", holder)
-	}
-	card := models.Carda{Number: int32(cnumi), Expiration: exp, CSV: csv, Holder: holder}
-	marsh, err := json.Marshal(card)
-	if err != nil {
-		return err
-	}
-	stream, err := client.Greceiver(ctx)
-	if err != nil {
-		models.Sugar.Debugf("client.Greceiver %v", err)
-		return err
-	}
-	// генерируем случайное имя файла, 8 байт, в HEX распухнет до 16 символов
-	forName := make([]byte, 8)
-	_, err = rand.Read(forName)
-	if err != nil {
-		return err
-	}
-	// переводим в HEX
-	objectName := hex.EncodeToString(forName) + ".card"
-
-	// Send text
-	resp, err := sendText(stream, string(marsh), objectName, "card")
-	if err != nil || !resp.Success {
-		models.Sugar.Debugf("error sending card data: %v", err)
-		return err
-	}
-	models.Sugar.Debugf("written %d bytes\n", resp.Size)
-	return nil
-
 }

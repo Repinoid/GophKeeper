@@ -237,7 +237,7 @@ func run(ctx context.Context) (err error) {
 	}
 	if putCardFlag != "" {
 		// TreatCard засылаем замаршаленные данные карты, в putCardFlag - введённые в CLI c флагом -putcard="...."
-		err = TreatCard(ctx, client, putCardFlag)
+		err = sendCard(ctx, client, putCardFlag)
 		return err
 	}
 
