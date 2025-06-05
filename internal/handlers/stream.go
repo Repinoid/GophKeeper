@@ -9,7 +9,7 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
-	"gorsovet/internal/minio"
+	"gorsovet/internal/minios3"
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 
@@ -95,7 +95,7 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 		fileContent = append(fileContent, chunk.GetContent()...)
 
 	}
-	info, err := minio.S3PutBytesToFile(ctx, models.MinioClient, bucketName, fname, fileContent, sse)
+	info, err := minios3.S3PutBytesToFile(ctx, models.MinioClient, bucketName, fname, fileContent, sse)
 	if err != nil {
 		return
 	}

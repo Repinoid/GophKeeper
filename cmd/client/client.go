@@ -127,7 +127,7 @@ func run(ctx context.Context) (err error) {
 		objectName := hex.EncodeToString(forName) + "_" + fname
 
 		// Send a file
-		resp, err := sendFile(stream, putFileFlag, objectName )
+		resp, err := sendFile(stream, putFileFlag, objectName)
 
 		if err != nil || !resp.Success {
 			models.Sugar.Debugf("error sending file: %v", err)
@@ -184,6 +184,11 @@ func run(ctx context.Context) (err error) {
 		}
 		fmt.Printf("file:\t%s\nmeta:\t%s\ntype:\t%s\nsize:\t%d\ncreated:\t%s\n",
 			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
+
+		if by.GetDataType() != "file" {
+			fmt.Println(by.GetContent())
+		}
+
 		return nil
 	}
 	//

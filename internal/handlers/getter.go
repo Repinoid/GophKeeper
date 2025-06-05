@@ -9,7 +9,9 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
-	"gorsovet/internal/minio"
+	"gorsovet/internal/minios3"
+
+	//"gorsovet/internal/minio"
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 
@@ -87,7 +89,7 @@ func (gk *GkeeperService) RemoveObjects(ctx context.Context, req *pb.RemoveObjec
 		return &response, status.Errorf(codes.Unimplemented, "%s %v", response.Reply, err)
 	}
 	// удалить файл в бакете
-	err = minio.S3RemoveFile(ctx, models.MinioClient, bucketname, fnam)
+	err = minios3.S3RemoveFile(ctx, models.MinioClient, bucketname, fnam)
 	if err != nil {
 		response.Reply = "bad S3RemoveFile"
 		models.Sugar.Debugln(err)
@@ -109,8 +111,8 @@ func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_Gsend
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
 	if err != nil {
 		models.Sugar.Debugln(err)
-	//	response.Reply = "ConnectToDB error"
-		return status.Errorf(codes.FailedPrecondition, "%s %v", "ConnectToDB error" , err)
+		//	response.Reply = "ConnectToDB error"
+		return status.Errorf(codes.FailedPrecondition, "%s %v", "ConnectToDB error", err)
 		//return status.Errorf(codes.FailedPrecondition, "%s %v", response.Reply, err)
 	}
 	defer db.CloseBase()
@@ -118,7 +120,7 @@ func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_Gsend
 	token := req.GetToken()
 	username, err := db.GetUserNameByToken(ctx, token)
 	if err != nil {
-	//	response.Reply = "bad GetUserNameByToken"
+		//	response.Reply = "bad GetUserNameByToken"
 		models.Sugar.Debugln(err)
 		return status.Errorf(codes.Unauthenticated, "%s %v", "bad GetUserNameByToken", err)
 	}
@@ -156,7 +158,7 @@ func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_Gsend
 		return
 	}
 	// читаем файл из бакета
-	fileBytes, err := minio.S3GetFileBytes(ctx, models.MinioClient, bucketName, param.Fileurl, sse)
+	fileBytes, err := minios3.S3GetFileBytes(ctx, models.MinioClient, bucketName, param.Fileurl, sse)
 	if err != nil {
 		models.Sugar.Debugf("minio.S3GetFileBytes  %v", err)
 		return

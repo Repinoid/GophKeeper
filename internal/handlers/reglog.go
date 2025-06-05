@@ -9,7 +9,7 @@ import (
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
-	"gorsovet/internal/minio"
+	"gorsovet/internal/minios3"
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 
@@ -68,7 +68,7 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		return &response, status.Error(codes.Internal, response.Reply)
 	}
 	// создаём бакет с именем userName но LowerCase
-	err = minio.CreateBucket(ctx, models.MinioClient, strings.ToLower(userName))
+	err = minios3.CreateBucket(ctx, models.MinioClient, strings.ToLower(userName))
 	if err != nil {
 		models.Sugar.Debugln(err)
 		response.Success = false
