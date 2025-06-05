@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -185,8 +186,20 @@ func run(ctx context.Context) (err error) {
 		fmt.Printf("file:\t%s\nmeta:\t%s\ntype:\t%s\nsize:\t%d\ncreated:\t%s\n",
 			by.GetFilename(), by.GetMetadata(), by.GetDataType(), by.GetSize(), by.GetCreatedAt().AsTime().Format(time.RFC3339))
 
-		if by.GetDataType() != "file" {
-			fmt.Println(by.GetContent())
+		if by.GetDataType() == "text" {
+			fmt.Println("_____________________________________________________________________________ CONTENT __")
+			fmt.Println(string(by.GetContent()))
+		}
+		if by.GetDataType() == "card" {
+			fmt.Println("_____________________________________________________________________________ CARD __")
+			cardRaw := by.GetContent()
+
+			card := models.Carda{}
+			err := json.Unmarshal(cardRaw, &card)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Number     %20d\nExpiration %20s\nCSV        %20s\nHolder     %20s\n", card.Number, card.Expiration, card.CSV, card.Holder)
 		}
 
 		return nil
