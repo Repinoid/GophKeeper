@@ -64,12 +64,12 @@ func IfIdExist(ctx context.Context, client pb.GkeeperClient, id int32) bool {
 }
 
 // Remover удаляем запись (ака объект) с номером id
-func Remover(ctx context.Context, client pb.GkeeperClient, id int) (err error) {
+func Remover(ctx context.Context, client pb.GkeeperClient, id int32) (err error) {
 	if token == "" {
 		return errors.New("no token")
 	}
 
-	req := &pb.RemoveObjectsRequest{ObjectId: int32(id), Token: token}
+	req := &pb.RemoveObjectsRequest{ObjectId: id, Token: token}
 	resp, err := client.RemoveObjects(ctx, req)
 	if err != nil {
 		models.Sugar.Debugf("No listing %v\n", err)
