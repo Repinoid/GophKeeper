@@ -32,7 +32,65 @@ func AddUser(localsql LocalDB, username, password string) (err error) {
 			return err
 		}
 	}
-
 	return
 }
 
+func PutFileParams(localsql LocalDB, object_id int32, username, fileURL, dataType, metaData string) (err error) {
+	username = strings.ToUpper(username)
+	order := ""
+	if object_id == 0 {
+		order = "INSERT INTO DATAS AS args(userName, fileURL, dataType, metaData) VALUES (?, ?, ?, ?) ;"
+		// если для username файл fileURL уже существует, перезаписываем его, также ключ и тд.
+		// ON CONFLICT потому что (username, fileURL) - Primary Key
+		//order += "ON CONFLICT (username, fileURL) DO UPDATE SET dataType=EXCLUDED.dataType, metaData=EXCLUDED.metaData ;"
+
+		_, err = localsql.SQLdb.Exec(order, username, fileURL, dataType, metaData)
+	} else {
+		// при обновлении записи надо заменить все её поля в строке БД за исключением номера.
+		// И удалить прежний файл из бакета
+		tx, err := localsql.SQLdb.Begin()
+		if err != nil {
+			return fmt.Errorf("error db.Begin  %w", err)
+		}
+		defer tx.Rollback()
+
+		// определяем прежнее имя файла в S3
+		order = "SELECT fileURL from DATAS WHERE username = ? AND id = ? ;"
+		row := tx.QueryRow(order, username, object_id)
+		urla := ""
+		err = row.Scan(&urla)
+		if err != nil {
+			return fmt.Errorf("row.Scan(&urla) %w", err)
+		}
+		// получить имя бакета, может быть иным чем юзернейм
+		bucketName := ""
+		order = "SELECT bucketname from USERA WHERE username =  ? ;"
+		row = tx.QueryRow(order, username)
+		err = row.Scan(&bucketName)
+		if err != nil {
+			return fmt.Errorf("row.Scan(&bucketname) %w", err)
+		}
+		// удалить файл в бакете
+		fnam := models.LocalS3Dir + "/" + strings.ToLower(username) + "/" + urla
+		err = os.Remove(fnam)
+		if err != nil {
+			models.Sugar.Debugf("bad local S3RemoveFile %v", err)
+			return err // сработает также defer tx.Rollback(ctx)
+		}
+		// обновить запись, фактически оставив только её номер. всё остальное - новое, в т.ч. и тип
+		order = "UPDATE DATAS SET fileURL=?, dataType=?, metaData=? WHERE username=? AND id=? ;"
+		_, err = tx.Exec(order, fileURL, dataType, metaData, username, object_id)
+		if err != nil {
+			return fmt.Errorf("UPDATE DATAS %w", err)
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		models.Sugar.Debugf("PutFileParams %v\norder %s\n", err, order)
+	}
+	return
+}

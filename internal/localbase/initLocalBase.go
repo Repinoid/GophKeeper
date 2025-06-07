@@ -48,23 +48,6 @@ func (dataBase *LocalDB) UsersTableCreation() (err error) {
 	return nil
 }
 
-func (dataBase *LocalDB) TokensTableCreation() error {
-	db := dataBase.SQLdb
-	creatorOrder :=
-		"CREATE TABLE IF NOT EXISTS TOKENA" +
-			"(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-			"username VARCHAR(64) NOT NULL, " +
-			"token TEXT NOT NULL, " +
-			"metadata TEXT, " +
-			"token_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
-
-	_, err := db.Exec(creatorOrder)
-	if err != nil {
-		return fmt.Errorf("create TOKENS table. %w", err)
-	}
-	return nil
-}
-
 func (dataBase *LocalDB) DataTableCreation() error {
 
 	db := dataBase.SQLdb
@@ -75,8 +58,6 @@ func (dataBase *LocalDB) DataTableCreation() error {
 			"username VARCHAR(64) NOT NULL, " +
 			"fileURL TEXT NOT NULL, " +
 			"datatype VARCHAR(20) NOT NULL, " +
-			"fileKey TEXT NOT NULL, " +
-			"fileSize int NOT NULL, " +
 			"metadata TEXT, " +
 			"user_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ; " //+
 		// имя юзера и имя файла должны быть уникальными - в одной корзине нет одинаковых имён файлов

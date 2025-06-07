@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
 )
 
@@ -31,6 +32,14 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
+	// create local file ala in S3 bucker
+	fname := models.LocalS3Dir + "/" + strings.ToLower(currentUser) + "/" + objectName
+	fileOut, err := os.Create(fname)
+	if err != nil {
+		return
+	}
+	defer fileOut.Close()
+
 	// Send first chunk with filename etc
 	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
 	n, err := file.Read(buffer)
@@ -40,6 +49,11 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 	firstChunk.Content = buffer[:n]
 
 	if err = stream.Send(firstChunk); err != nil {
+		return
+	}
+	// write first chunk to local s3
+	_, err = fileOut.Write(buffer[:n])
+	if err != nil {
 		return
 	}
 	// Send remaining chunks
@@ -57,8 +71,17 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 		}); err != nil {
 			return nil, err
 		}
+		_, err = fileOut.Write(buffer[:n])
+		if err != nil {
+			return nil, err
+		}
 	}
 	resp, err = stream.CloseAndRecv()
+	if err != nil {
+		return nil, err
+	}
+	err = localbase.PutFileParams(*localsql, 0, currentUser, objectName, "file", metaFlag)
+
 	return
 }
 
@@ -74,11 +97,11 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 
 	// create local file ala in S3 bucker
 	fname := models.LocalS3Dir + "/" + strings.ToLower(currentUser) + "/" + objectName
-	file, err := os.Create(fname)
+	fileOut, err := os.Create(fname)
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer fileOut.Close()
 
 	// Send first chunk with filename
 	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: dtype, ObjectId: int32(updateFlag)}
@@ -91,7 +114,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 		return
 	}
 	// write first chunk to local s3
-	_, err = file.Write(buffer[:n])
+	_, err = fileOut.Write(buffer[:n])
 	if err != nil {
 		return
 	}
@@ -110,12 +133,17 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 		}); err != nil {
 			return nil, err
 		}
-		_, err = file.Write(buffer[:n])
+		_, err = fileOut.Write(buffer[:n])
 		if err != nil {
 			return nil, err
 		}
 	}
 	resp, err = stream.CloseAndRecv()
+	if err != nil {
+		return nil, err
+	}
+	err = localbase.PutFileParams(*localsql, 0, currentUser, objectName, dtype, metaFlag)
+
 	return
 }
 

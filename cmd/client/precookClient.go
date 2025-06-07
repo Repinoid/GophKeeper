@@ -72,11 +72,6 @@ func initClient(ctx context.Context) (err error) {
 		return
 	}
 
-	err = localsql.TokensTableCreation()
-	if err != nil {
-		fmt.Printf("error TokensTableCreation  %v", err)
-		return
-	}
 	err = localsql.DataTableCreation()
 	if err != nil {
 		fmt.Printf("error DataTableCreation  %v", err)
