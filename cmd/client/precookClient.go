@@ -4,27 +4,13 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
-	"gorsovet/internal/localbase"
-	"gorsovet/internal/models"
-	"log"
-	"os"
-
-	"go.uber.org/zap"
 )
 
 var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag, fnameFlag, putCardFlag string
 var removeFlag, getFileFlag, updateFlag, showFlag int
 var listFlag bool
 
-func initClient(ctx context.Context) (err error) {
-
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatal("cannot initialize zap")
-	}
-	defer logger.Sync()
-	models.Sugar = *logger.Sugar()
+func initGrpcClient(ctx context.Context) (err error) {
 
 	flag.StringVar(&metaFlag, "meta", "", "metadata, -meta=\"...metadata text...\"")
 	flag.StringVar(&registerFlag, "register", "", "register new user, -register=\"userName,password\" divided by comma")
@@ -47,36 +33,29 @@ func initClient(ctx context.Context) (err error) {
 	// проверка на наличие флагов, в client.go срабатывает первый ненулевой
 	if registerFlag == "" && loginFlag == "" && putTextFlag == "" && putFileFlag == "" && !listFlag && removeFlag == 0 && showFlag == 0 &&
 		getFileFlag == 0 && putCardFlag == "" {
-		return errors.New("no any flag")
+		return errors.New("no any flag ")
 	}
 	// local bases init
 
-	// create  S3dir if not exists
-	if _, err := os.Stat(models.LocalS3Dir); os.IsNotExist(err) {
-		// Create the directory with 0755 permissions (rwx for owner, rx for group/others)
-		err := os.Mkdir(models.LocalS3Dir, 0755)
-		if err != nil {
-			return err
-		}
-	}
+	return
+}
+func initLocalClient(ctx context.Context) (err error) {
 
-	localsql, err = localbase.ConnectToLocalDB(models.LocalSqlEndpoint)
-	if err != nil {
-		fmt.Printf("error ConnectToLocalDB  %v", err)
-		return
-	}
+	flag.StringVar(&loginFlag, "login", "", "login to Server, -login=\"userName,password\" divided by comma")
 
-	err = localsql.UsersTableCreation()
-	if err != nil {
-		fmt.Printf("error UsersTableCreation  %v", err)
-		return
-	}
+	flag.BoolVar(&listFlag, "list", false, "list objects, -list")
+	flag.IntVar(&showFlag, "show", 0, "show record parameters from storage, -show=<id of record>, take it by -list")
+	flag.IntVar(&getFileFlag, "get", 0, "download record to file, -get=<id of record> -file=\"filePath/filename\", if no -file flag - filename from storage")
+	flag.StringVar(&fnameFlag, "file", "", "file name to save file, -file=\"filePath/filename\", uses only with -get")
 
-	err = localsql.DataTableCreation()
-	if err != nil {
-		fmt.Printf("error DataTableCreation  %v", err)
-		return
+	flag.Parse()
+
+	// metaFlag fnameFlag updateFlag используются только совместно
+	// проверка на наличие флагов, в client.go срабатывает первый ненулевой
+	if loginFlag == "" && !listFlag && showFlag == 0 && getFileFlag == 0 {
+		return errors.New("no any flag in local mode")
 	}
+	// local bases init
 
 	return
 }

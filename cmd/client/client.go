@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 
 	pb "gorsovet/cmd/proto"
@@ -9,6 +10,7 @@ import (
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -21,17 +23,40 @@ var (
 
 func main() {
 	ctx := context.Background()
-	err := initClient(ctx)
+
+	// logger init
+	logger, err := zap.NewDevelopment()
 	if err != nil {
-		models.Sugar.Fatal(err)
+		log.Fatal("cannot initialize zap")
 	}
+	defer logger.Sync()
+	models.Sugar = *logger.Sugar()
 
-	if err := run(ctx); err != nil {
-		models.Sugar.Info(err)
+	// connect & create tables local DB
+	localsql, err = localbase.ConnectToLocalDB(models.LocalSqlEndpoint)
+	if err != nil {
+		models.Sugar.Errorf("error ConnectToLocalDB  %v", err)
+		return
 	}
-}
-
-func run(ctx context.Context) (err error) {
+	err = localsql.UsersTableCreation()
+	if err != nil {
+		models.Sugar.Errorf("error UsersTableCreation  %v", err)
+		return
+	}
+	err = localsql.DataTableCreation()
+	if err != nil {
+		models.Sugar.Errorf("error DataTableCreation  %v", err)
+		return
+	}
+	// create  S3dir if not exists
+	if _, err := os.Stat(models.LocalS3Dir); os.IsNotExist(err) {
+		// Create the directory with 0755 permissions (rwx for owner, rx for group/others)
+		err := os.Mkdir(models.LocalS3Dir, 0755)
+		if err != nil {
+			models.Sugar.Errorf("error %s creation %v", models.LocalS3Dir, err)
+			return
+		}
+	}
 
 	// устанавливаем соединение с сервером
 	tlsCreds, err := privacy.LoadClientTLSCredentials("../tls/public.crt")
@@ -40,11 +65,25 @@ func run(ctx context.Context) (err error) {
 	}
 	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
 
-	if err != nil {
-		models.Sugar.Fatal(err)
+	if err == nil {
+		// канал открыт, по выходу - закрыть
+		defer conn.Close()
+		err = initGrpcClient(ctx)
+		// если связь с сервером есть но флаги кривые
+		if err != nil {
+			models.Sugar.Fatal(err)
+		}
+		// отработка клиента по GRPC
+		if err := runGrpc(ctx, conn); err != nil {
+			models.Sugar.Fatal(err)
+		}
+		return
 	}
-	defer conn.Close()
+	
 
+}
+
+func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 	// временное решение по хранению токена в файле. создаётся при вызове Login
 	tokenB, err := os.ReadFile("token.txt")
 	if err == nil {
