@@ -1,4 +1,4 @@
-package main
+package localbase
 
 import (
 	"database/sql"
