@@ -25,4 +25,7 @@ var (
 	MinioEndpoint = "localhost:9000"
 	MinioUser     = "nail"
 	MinioPassword = "password"
+
+	LocalS3Dir       = "localS3"
+	LocalSqlEndpoint = "file:localsql.db"
 )

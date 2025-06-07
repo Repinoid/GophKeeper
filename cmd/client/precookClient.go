@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
+	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
 	"log"
+	"os"
 
 	"go.uber.org/zap"
 )
@@ -45,6 +48,39 @@ func initClient(ctx context.Context) (err error) {
 	if registerFlag == "" && loginFlag == "" && putTextFlag == "" && putFileFlag == "" && !listFlag && removeFlag == 0 && showFlag == 0 &&
 		getFileFlag == 0 && putCardFlag == "" {
 		return errors.New("no any flag")
+	}
+	// local bases init
+
+	// create  S3dir if not exists
+	if _, err := os.Stat(models.LocalS3Dir); os.IsNotExist(err) {
+		// Create the directory with 0755 permissions (rwx for owner, rx for group/others)
+		err := os.Mkdir(models.LocalS3Dir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	localsql, err = localbase.ConnectToLocalDB(models.LocalSqlEndpoint)
+	if err != nil {
+		fmt.Printf("error ConnectToLocalDB  %v", err)
+		return
+	}
+
+	err = localsql.UsersTableCreation()
+	if err != nil {
+		fmt.Printf("error UsersTableCreation  %v", err)
+		return
+	}
+
+	err = localsql.TokensTableCreation()
+	if err != nil {
+		fmt.Printf("error TokensTableCreation  %v", err)
+		return
+	}
+	err = localsql.DataTableCreation()
+	if err != nil {
+		fmt.Printf("error DataTableCreation  %v", err)
+		return
 	}
 
 	return

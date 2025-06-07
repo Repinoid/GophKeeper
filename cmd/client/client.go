@@ -5,14 +5,19 @@ import (
 	"os"
 
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 
 	"google.golang.org/grpc"
 )
 
-var gPort = ":3200"
-var token = ""
+var (
+	gPort       = ":3200"
+	token       = ""
+	localsql    *localbase.LocalDB
+	currentUser = "localuser"
+)
 
 func main() {
 	ctx := context.Background()

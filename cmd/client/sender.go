@@ -72,6 +72,14 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
+	// create local file ala in S3 bucker
+	fname := models.LocalS3Dir + "/" + strings.ToLower(currentUser) + "/" + objectName
+	file, err := os.Create(fname)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
 	// Send first chunk with filename
 	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: dtype, ObjectId: int32(updateFlag)}
 	n, err := reader.Read(buffer)
@@ -79,10 +87,15 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 		return
 	}
 	firstChunk.Content = buffer[:n]
-
 	if err = stream.Send(firstChunk); err != nil {
 		return
 	}
+	// write first chunk to local s3
+	_, err = file.Write(buffer[:n])
+	if err != nil {
+		return
+	}
+
 	// Send remaining chunks
 	for {
 		n, err := reader.Read(buffer)
@@ -95,6 +108,10 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 		if err := stream.Send(&pb.ReceiverChunk{
 			Content: buffer[:n],
 		}); err != nil {
+			return nil, err
+		}
+		_, err = file.Write(buffer[:n])
+		if err != nil {
 			return nil, err
 		}
 	}

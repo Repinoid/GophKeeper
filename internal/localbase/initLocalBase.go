@@ -8,22 +8,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type localDB struct {
+type LocalDB struct {
 	//	DB     *pgx.Conn
 	SQLdb *sql.DB
 }
 
 // ConnectToDB получить эндпоинт Базы Данных
-func ConnectToLocalDB(DBEndPoint string) (dataBase *localDB, err error) {
+func ConnectToLocalDB(DBEndPoint string) (dataBase *LocalDB, err error) {
 	db, err := sql.Open("sqlite", DBEndPoint)
 	if err != nil {
 		return
 	}
-	dataBase = &localDB{SQLdb: db}
+	dataBase = &LocalDB{SQLdb: db}
 	return
 }
 
-func (dataBase *localDB) UsersTableCreation() (err error) {
+func (dataBase *LocalDB) UsersTableCreation() (err error) {
 
 	db := dataBase.SQLdb
 	// _, err := db.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;") // расширение для хэширования паролей
@@ -48,7 +48,7 @@ func (dataBase *localDB) UsersTableCreation() (err error) {
 	return nil
 }
 
-func (dataBase *localDB) TokensTableCreation() error {
+func (dataBase *LocalDB) TokensTableCreation() error {
 	db := dataBase.SQLdb
 	creatorOrder :=
 		"CREATE TABLE IF NOT EXISTS TOKENA" +
@@ -65,7 +65,7 @@ func (dataBase *localDB) TokensTableCreation() error {
 	return nil
 }
 
-func (dataBase *localDB) DataTableCreation() error {
+func (dataBase *LocalDB) DataTableCreation() error {
 
 	db := dataBase.SQLdb
 
@@ -89,7 +89,7 @@ func (dataBase *localDB) DataTableCreation() error {
 	return nil
 }
 
-func (dataBase *localDB) CloseBase() {
+func (dataBase *LocalDB) CloseBase() {
 	dataBase.SQLdb.Close()
 }
 

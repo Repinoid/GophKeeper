@@ -14,6 +14,7 @@ import (
 	"time"
 
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
 )
 
@@ -29,6 +30,10 @@ func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag
 		return errors.New("wrong username, only letters & digits allowed [0-9][a-z][A-Z]")
 	}
 	err = AddUser(ctx, client, args[0], args[1])
+	if err != nil {
+		return err
+	}
+	err = localbase.AddUser(*localsql, args[0], args[1])
 	return
 }
 
@@ -43,7 +48,6 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 	if err := os.WriteFile("token.txt", []byte(token), 0666); err != nil {
 		return errors.New("can't write to token.txt")
 	}
-
 	return
 }
 
