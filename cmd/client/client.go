@@ -12,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 )
 
 var (
@@ -65,21 +66,36 @@ func main() {
 	}
 	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
 
-	if err == nil {
+	// Проверяем состояние соединения
+	cr := conn.GetState()
+	_ = cr
+
+	if err == nil && conn.GetState() == connectivity.Ready {
 		// канал открыт, по выходу - закрыть
 		defer conn.Close()
 		err = initGrpcClient(ctx)
 		// если связь с сервером есть но флаги кривые
 		if err != nil {
-			models.Sugar.Fatal(err)
+			models.Sugar.Error(err)
+			return
 		}
 		// отработка клиента по GRPC
 		if err := runGrpc(ctx, conn); err != nil {
-			models.Sugar.Fatal(err)
+			models.Sugar.Error(err)
+			return
 		}
 		return
 	}
-	
+	err = initLocalClient(ctx)
+	if err != nil {
+		models.Sugar.Error(err)
+		return
+	}
+	err = runLocal()
+	if err != nil {
+		models.Sugar.Error(err)
+		return
+	}
 
 }
 
@@ -137,6 +153,36 @@ func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 		// TreatCard засылаем замаршаленные данные карты, в putCardFlag - введённые в CLI c флагом -putcard="...."
 		err = sendCard(ctx, client, putCardFlag)
 		return err
+	}
+
+	return
+}
+func runLocal() (err error) {
+	// временное решение по хранению токена в файле. создаётся при вызове Login
+	tokenB, err := os.ReadFile("token.txt")
+	if err == nil {
+		token = string(tokenB)
+	}
+
+	if loginFlag != "" {
+		err = loginFlagLocal(loginFlag)
+		return
+	}
+
+	// вывод в терминал списка загруженных юзером объектов
+	if listFlag {
+		err = listFlagLocal()
+		return err
+	}
+
+	//
+	if showFlag != 0 {
+		err = showFlagLocal(int32(showFlag))
+		return
+	}
+	//
+	if getFileFlag != 0 {
+		err = getFileFlagLocal(int32(getFileFlag))
 	}
 
 	return

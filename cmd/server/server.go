@@ -66,7 +66,9 @@ func Run(ctx context.Context) (err error) {
 		defer cancel()
 
 		// Stop accepting new connections and wait for existing ones
-		grpcServer.GracefulStop()
+
+		grpcServer.Stop()
+		//		grpcServer.GracefulStop()
 		// Alternatively, use s.Stop() for immediate shutdown
 		close(done)
 	}()

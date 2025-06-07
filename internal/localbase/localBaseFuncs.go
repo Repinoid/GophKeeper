@@ -5,7 +5,11 @@ import (
 	"gorsovet/internal/models"
 	"os"
 	"strings"
+	"time"
 
+	pb "gorsovet/cmd/proto"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 	_ "modernc.org/sqlite"
 )
 
@@ -93,4 +97,34 @@ func PutFileParams(localsql LocalDB, object_id int32, username, fileURL, dataTyp
 		models.Sugar.Debugf("PutFileParams %v\norder %s\n", err, order)
 	}
 	return
+}
+
+func GetList(localsql LocalDB, username string) (listing []*pb.ObjectParams, err error) {
+	order := "SELECT id, fileURL, datatype, metadata, user_created_at from DATAS WHERE username = ? order by user_created_at ;"
+	rows, err := localsql.SQLdb.Query(order, username) //
+	if err != nil {
+		models.Sugar.Debugf("db.Query %+v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pgTime time.Time
+		ols := pb.ObjectParams{}
+		err = rows.Scan(&ols.Id, &ols.Fileurl, &ols.DataType, &ols.Metadata, &pgTime)
+		if err != nil {
+			models.Sugar.Debugf("rows.Scan %+v\n", err)
+			return
+		}
+		ols.CreatedAt = timestamppb.New(pgTime)
+		listing = append(listing, &ols)
+	}
+	err = rows.Err()
+	// Err returns any error that occurred while reading. Err must only be called after the Rows is closed
+	if err != nil {
+		models.Sugar.Debugf("err = rows.Err() %+v\n", err)
+		return
+	}
+	return
+
 }

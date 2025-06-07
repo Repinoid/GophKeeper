@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 )
 
 var metaFlag, registerFlag, loginFlag, putFileFlag, putTextFlag, fnameFlag, putCardFlag string
@@ -40,6 +41,8 @@ func initGrpcClient(ctx context.Context) (err error) {
 	return
 }
 func initLocalClient(ctx context.Context) (err error) {
+
+	fmt.Println("Server unreacheable. Client runs in local Read-Only mode")
 
 	flag.StringVar(&loginFlag, "login", "", "login to Server, -login=\"userName,password\" divided by comma")
 
