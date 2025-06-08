@@ -29,6 +29,9 @@ func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag
 	if !re.MatchString(args[0]) {
 		return errors.New("wrong username, only letters & digits allowed [0-9][a-z][A-Z]")
 	}
+	if len(args[0]) < 3 {
+		return errors.New("username cannot be shorter than 3 characters")
+	}
 	err = AddUser(ctx, client, args[0], args[1])
 	if err != nil {
 		return err
@@ -53,6 +56,7 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 	if err := os.WriteFile("token.txt", []byte(token), 0666); err != nil {
 		return errors.New("can't write to token.txt")
 	}
+	currentUser = args[0]
 	return
 }
 

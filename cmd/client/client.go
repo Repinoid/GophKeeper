@@ -20,7 +20,7 @@ var (
 	gPort       = ":3200"
 	token       = ""
 	localsql    *localbase.LocalDB
-	currentUser = "localuser"
+	currentUser = ""
 )
 
 func main() {
@@ -106,12 +106,16 @@ func main() {
 // если сервер доступен
 func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 	// временное решение по хранению токена в файле. создаётся при вызове Login
-	tokenB, err := os.ReadFile("token.txt")
-	if err == nil {
-		token = string(tokenB)
-	} else {
-		fmt.Println("You are not logged. client -login=\"username, password\"")
-		os.Exit(0)
+
+	// если не регистрация или логин и токена немае
+	if registerFlag == "" && loginFlag == "" {
+		tokenB, err := os.ReadFile("token.txt")
+		if err == nil {
+			token = string(tokenB)
+		} else {
+			fmt.Println("You are not logged. client -login=\"username, password\"")
+			os.Exit(0)
+		}
 	}
 
 	client := pb.NewGkeeperClient(conn)
