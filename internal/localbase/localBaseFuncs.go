@@ -128,3 +128,20 @@ func GetList(localsql LocalDB, username string) (listing []*pb.ObjectParams, err
 	return
 
 }
+
+func GetRecordHead(localsql LocalDB, id int32) (head *pb.ObjectParams, err error) {
+
+	order := "SELECT username, fileURL, datatype, metadata, user_created_at from DATAS WHERE id = ? ;"
+	row := localsql.SQLdb.QueryRow(order, id) //
+	var pgTime time.Time
+	ols := pb.ObjectParams{}
+	// filekey - for username here
+	err = row.Scan(&ols.Filekey, &ols.Fileurl, &ols.DataType, &ols.Metadata, &pgTime)
+	if err != nil {
+		models.Sugar.Debugf("db.Query %+v\n", err)
+		return
+	}
+	ols.CreatedAt = timestamppb.New(pgTime)
+	head = &ols
+	return
+}

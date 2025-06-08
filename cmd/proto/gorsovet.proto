@@ -15,7 +15,16 @@ service gkeeper {
 
   rpc ListObjects (ListObjectsRequest) returns (ListObjectsResponse) {}
   rpc RemoveObjects (RemoveObjectsRequest) returns (RemoveObjectsResponse) {}
+
+  rpc Gping (PingRequest) returns (PingResponse);
 }
+
+message PingRequest {}
+message PingResponse {
+    string status = 1;
+    int64 timestamp = 2;
+}
+
 // передаётся номер объекта в таблице DATAS для получения
 message SenderRequest {
   bool success = 1;

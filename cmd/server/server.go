@@ -15,7 +15,10 @@ import (
 	"gorsovet/internal/privacy"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	"google.golang.org/grpc/health"
 )
 
 func main() {
@@ -46,6 +49,12 @@ func Run(ctx context.Context) (err error) {
 	}
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
+	healthServer := health.NewServer()
+	// Устанавливаем статус SERVING
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	// Регистрируем health сервис
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+
 	//	grpcServer := grpc.NewServer()
 
 	pb.RegisterGkeeperServer(grpcServer, &handlers.GkeeperService{})
@@ -67,8 +76,8 @@ func Run(ctx context.Context) (err error) {
 
 		// Stop accepting new connections and wait for existing ones
 
-		grpcServer.Stop()
-		//		grpcServer.GracefulStop()
+		//grpcServer.Stop()
+		grpcServer.GracefulStop()
 		// Alternatively, use s.Stop() for immediate shutdown
 		close(done)
 	}()

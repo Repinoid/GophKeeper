@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"io"
 	_ "net/http/pprof"
+	"time"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
@@ -19,6 +20,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func (gk *GkeeperService) Gping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
+	return &pb.PingResponse{
+		Status:    "OK",
+		Timestamp: time.Now().Unix(),
+	}, nil
+}
 
 func (gk *GkeeperService) ListObjects(ctx context.Context, req *pb.ListObjectsRequest) (resp *pb.ListObjectsResponse, err error) {
 	response := pb.ListObjectsResponse{Success: false, Reply: "Could not get objects list"}

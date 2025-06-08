@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -12,7 +13,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 var (
@@ -70,7 +71,10 @@ func main() {
 	cr := conn.GetState()
 	_ = cr
 
-	if err == nil && conn.GetState() == connectivity.Ready {
+	isServerErr := PingServer(conn)
+
+	//	if err == nil && conn.GetState() == connectivity.Ready {
+	if err == nil && isServerErr == nil {
 		// канал открыт, по выходу - закрыть
 		defer conn.Close()
 		err = initGrpcClient(ctx)
@@ -186,4 +190,17 @@ func runLocal() (err error) {
 	}
 
 	return
+}
+
+func PingServer(conn *grpc.ClientConn) error {
+	healthClient := grpc_health_v1.NewHealthClient(conn)
+	resp, err := healthClient.Check(context.Background(), &grpc_health_v1.HealthCheckRequest{})
+	if err != nil {
+		return err
+	}
+
+	if resp.Status != grpc_health_v1.HealthCheckResponse_SERVING {
+		return fmt.Errorf("server not serving, status: %v", resp.Status)
+	}
+	return nil
 }

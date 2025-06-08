@@ -25,6 +25,7 @@ type GkeeperClient interface {
 	Gsender(ctx context.Context, in *SenderRequest, opts ...grpc.CallOption) (Gkeeper_GsenderClient, error)
 	ListObjects(ctx context.Context, in *ListObjectsRequest, opts ...grpc.CallOption) (*ListObjectsResponse, error)
 	RemoveObjects(ctx context.Context, in *RemoveObjectsRequest, opts ...grpc.CallOption) (*RemoveObjectsResponse, error)
+	Gping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 }
 
 type gkeeperClient struct {
@@ -137,6 +138,15 @@ func (c *gkeeperClient) RemoveObjects(ctx context.Context, in *RemoveObjectsRequ
 	return out, nil
 }
 
+func (c *gkeeperClient) Gping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, "/gorsovet.gkeeper/Gping", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GkeeperServer is the server API for Gkeeper service.
 // All implementations must embed UnimplementedGkeeperServer
 // for forward compatibility
@@ -148,6 +158,7 @@ type GkeeperServer interface {
 	Gsender(*SenderRequest, Gkeeper_GsenderServer) error
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsResponse, error)
 	RemoveObjects(context.Context, *RemoveObjectsRequest) (*RemoveObjectsResponse, error)
+	Gping(context.Context, *PingRequest) (*PingResponse, error)
 	mustEmbedUnimplementedGkeeperServer()
 }
 
@@ -172,6 +183,9 @@ func (UnimplementedGkeeperServer) ListObjects(context.Context, *ListObjectsReque
 }
 func (UnimplementedGkeeperServer) RemoveObjects(context.Context, *RemoveObjectsRequest) (*RemoveObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveObjects not implemented")
+}
+func (UnimplementedGkeeperServer) Gping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Gping not implemented")
 }
 func (UnimplementedGkeeperServer) mustEmbedUnimplementedGkeeperServer() {}
 
@@ -305,6 +319,24 @@ func _Gkeeper_RemoveObjects_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gkeeper_Gping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GkeeperServer).Gping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gorsovet.gkeeper/Gping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GkeeperServer).Gping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Gkeeper_ServiceDesc is the grpc.ServiceDesc for Gkeeper service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -327,6 +359,10 @@ var Gkeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveObjects",
 			Handler:    _Gkeeper_RemoveObjects_Handler,
+		},
+		{
+			MethodName: "Gping",
+			Handler:    _Gkeeper_Gping_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

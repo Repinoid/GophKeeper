@@ -193,7 +193,7 @@ func sendCard(ctx context.Context, client pb.GkeeperClient, cardData string) (er
 		return err
 	}
 	// переводим в HEX, add ****, add last 4 card digits
-	objectName := hex.EncodeToString(forName) + "****" + cardNumStr[len(cardNumStr)-4:] + ".card"
+	objectName := hex.EncodeToString(forName) + "____" + cardNumStr[len(cardNumStr)-4:] + ".card"
 
 	// Send card params as marshalled text with DataType "card"
 	resp, err := sendText(stream, string(marsh), objectName, "card")
