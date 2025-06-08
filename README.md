@@ -29,8 +29,9 @@ client -login="username, password"  Логин на сервер
 client -putfile="путь к файлу/имя файла"    Запись файла в хранилище
 client -puttext=" в кавычках текст "        Запись текстовых данных
 client -putcard=" номер, ММ/YY, CSV, Card Holder"   Запись данных банковской карты
+
        -update=id при наличии этого флага совместно с putfile || puttext || putcard 
-            обновляются данные записи с номером id
+            обновляются (фактически перезаписываются) данные записи с номером id
 
 client -list        Вывод на экран списка загруженных данных, первый столбец ID - номер 
 client -show=id     Вывод на экран параметров записи с номером id
@@ -50,8 +51,7 @@ client -remove=id   id-номер записи для удаления
 В это случае активны флаги только на чтение (login, list, show, get) <br>
 register, put-ы, remove - отсутствуют<br>
 
-Teсты запускают контейнеры testcontainers Postgres & Minio <br>
-перед тестами **docker-compose up -d** <br>
+
 
 
 
