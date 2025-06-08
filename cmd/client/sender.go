@@ -80,7 +80,7 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 	if err != nil {
 		return nil, err
 	}
-	err = localbase.PutFileParams(*localsql, 0, currentUser, objectName, "file", metaFlag)
+	err = localbase.PutFileParams(*localsql, int32(updateFlag), currentUser, objectName, "file", metaFlag)
 
 	return
 }
@@ -142,7 +142,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 	if err != nil {
 		return nil, err
 	}
-	err = localbase.PutFileParams(*localsql, 0, currentUser, objectName, dtype, metaFlag)
+	err = localbase.PutFileParams(*localsql, int32(updateFlag), currentUser, objectName, dtype, metaFlag)
 
 	return
 }
