@@ -131,6 +131,12 @@ func removeFlagFunc(ctx context.Context, client pb.GkeeperClient, removeFlag int
 		models.Sugar.Debugf("Remover %v", err)
 		return err
 	}
+	err = localbase.Remover(*localsql, removeFlag)
+	if err != nil {
+		models.Sugar.Debugf("Local Remover %v", err)
+		return err
+	}
+
 	return
 }
 

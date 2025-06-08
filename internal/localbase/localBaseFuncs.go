@@ -13,13 +13,13 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// AddUser вносит в локальную БД данные о зарегистрированных пользователях, запускается в registerFlagFunc после внесения того же на БД сервера
 func AddUser(localsql LocalDB, username, password string) (err error) {
 
 	password, err = hashPassword(password)
 	if err != nil {
 		return
 	}
-
 	_, err = localsql.SQLdb.Exec("INSERT INTO USERA(username, password, bucketname) VALUES(?,?,?)",
 		strings.ToUpper(username), password, strings.ToLower(username))
 	if err != nil {
@@ -39,6 +39,7 @@ func AddUser(localsql LocalDB, username, password string) (err error) {
 	return
 }
 
+// PutFileParams - внесение данных о записи в локальную БД, запускается после подобного для БД сервера
 func PutFileParams(localsql LocalDB, object_id int32, username, fileURL, dataType, metaData string) (err error) {
 	username = strings.ToUpper(username)
 	order := ""
@@ -99,6 +100,7 @@ func PutFileParams(localsql LocalDB, object_id int32, username, fileURL, dataTyp
 	return
 }
 
+// GetList - получение списка записей из локальной БД, срабатывает при недоступности Сервера
 func GetList(localsql LocalDB, username string) (listing []*pb.ObjectParams, err error) {
 	order := "SELECT id, fileURL, datatype, metadata, user_created_at from DATAS WHERE username = ? order by user_created_at ;"
 	rows, err := localsql.SQLdb.Query(order, username) //
@@ -129,6 +131,7 @@ func GetList(localsql LocalDB, username string) (listing []*pb.ObjectParams, err
 
 }
 
+// GetList - получение параметров записи id из локальной БД, срабатывает при недоступности Сервера
 func GetRecordHead(localsql LocalDB, id int32) (head *pb.ObjectParams, err error) {
 
 	order := "SELECT username, fileURL, datatype, metadata, user_created_at from DATAS WHERE id = ? ;"
@@ -138,10 +141,39 @@ func GetRecordHead(localsql LocalDB, id int32) (head *pb.ObjectParams, err error
 	// filekey - for username here
 	err = row.Scan(&ols.Filekey, &ols.Fileurl, &ols.DataType, &ols.Metadata, &pgTime)
 	if err != nil {
-		//models.Sugar.Debugf("db.Query %+v\n", err)
+		models.Sugar.Debug(err)
 		return
 	}
 	ols.CreatedAt = timestamppb.New(pgTime)
 	head = &ols
+	return
+}
+
+func Remover(localsql LocalDB, id int32) (err error) {
+	// добываем пусть к файлу из DATAS
+	order := "SELECT username, fileURL from DATAS WHERE id = ? ;"
+	row := localsql.SQLdb.QueryRow(order, id) //
+	var folder, filename string
+	// filekey - for username here
+	err = row.Scan(&folder, &filename)
+	if err != nil {
+		models.Sugar.Debug(err)
+		return
+	}
+	// удаляем файл с данными
+	fnam := models.LocalS3Dir + "/" + strings.ToLower(folder) + "/" + filename
+	err = os.Remove(fnam)
+	if err != nil {
+		models.Sugar.Debug(err)
+		return
+	}
+	// удаляем запись в таблице локальной БД
+	order = "DELETE from DATAS WHERE id = ? ;"
+	_, err = localsql.SQLdb.Exec(order, id)
+	if err != nil {
+		models.Sugar.Debug(err)
+		return
+	}
+
 	return
 }

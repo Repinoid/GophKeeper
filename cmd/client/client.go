@@ -67,7 +67,7 @@ func main() {
 	}
 	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
 
-	// Проверяем состояние соединения
+	// Проверяем состояние соединения - нихрена не работает GetState(), определяем статус сервера через PingServer, это healthcheck
 	cr := conn.GetState()
 	_ = cr
 
@@ -103,6 +103,7 @@ func main() {
 
 }
 
+// если сервер доступен 
 func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 	// временное решение по хранению токена в файле. создаётся при вызове Login
 	tokenB, err := os.ReadFile("token.txt")
@@ -161,6 +162,8 @@ func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 
 	return
 }
+
+// если сервер в отключке - юзаем локальную базу. 
 func runLocal() (err error) {
 	// временное решение по хранению токена в файле. создаётся при вызове Login
 	tokenB, err := os.ReadFile("token.txt")
@@ -192,6 +195,7 @@ func runLocal() (err error) {
 	return
 }
 
+// PingServer определить самочувствие сервера
 func PingServer(conn *grpc.ClientConn) error {
 	healthClient := grpc_health_v1.NewHealthClient(conn)
 	resp, err := healthClient.Check(context.Background(), &grpc_health_v1.HealthCheckRequest{})
