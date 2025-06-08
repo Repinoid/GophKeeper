@@ -10,6 +10,10 @@ xl*
 *.text
 *.card
 *.file
+*.txt
+localS3/
+server
+client
 
 vaultage/vault/
 vault/backend/
@@ -17,8 +21,6 @@ vault/backend/
 S3Bucks/
 MinIO/S3Bucks/
 certs/
-
-
 
 variables.tf
 terraform/
