@@ -36,7 +36,7 @@ func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag
 	if err != nil {
 		return err
 	}
-	err = localbase.AddUser(*localsql, args[0], args[1])
+	err = localbase.AddUser(*localsql, args[0], args[1], metaFlag)
 	return
 }
 
@@ -57,6 +57,10 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 		return errors.New("can't write to token.txt")
 	}
 	currentUser = args[0]
+	// сохраняем имя юзера
+	if err := os.WriteFile("currentuser.txt", []byte(args[0]), 0666); err != nil {
+		return errors.New("can't write to currentuser.txt")
+	}
 	return
 }
 

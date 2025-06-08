@@ -116,6 +116,13 @@ func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 			fmt.Println("You are not logged. client -login=\"username, password\"")
 			os.Exit(0)
 		}
+		userB, err := os.ReadFile("currentuser.txt")
+		if err == nil {
+			currentUser = string(userB)
+		} else {
+			fmt.Println("Can't read username from currentuser.txt")
+			os.Exit(0)
+		}
 	}
 
 	client := pb.NewGkeeperClient(conn)
@@ -172,13 +179,17 @@ func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 
 // если сервер в отключке - юзаем локальную базу.
 func runLocal() (err error) {
-	// имя текущего пользователя
-	tokenB, err := os.ReadFile("currentuser.txt")
-	if err == nil {
-		currentUser = string(tokenB)
-	} else {
-		fmt.Println("You are not logged. client -login=\"username, password\"")
-		os.Exit(0)
+
+	// if not login flag - load current user name
+	if loginFlag == "" {
+		// имя текущего пользователя
+		userB, err := os.ReadFile("currentuser.txt")
+		if err == nil {
+			currentUser = string(userB)
+		} else {
+			fmt.Println("You are not logged. client -login=\"username, password\"")
+			os.Exit(0)
+		}
 	}
 
 	if loginFlag != "" {

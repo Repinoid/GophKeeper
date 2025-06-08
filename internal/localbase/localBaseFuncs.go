@@ -14,14 +14,14 @@ import (
 )
 
 // AddUser вносит в локальную БД данные о зарегистрированных пользователях, запускается в registerFlagFunc после внесения того же на БД сервера
-func AddUser(localsql LocalDB, username, password string) (err error) {
+func AddUser(localsql LocalDB, username, password, metaFlag string) (err error) {
 
 	password, err = hashPassword(password)
 	if err != nil {
 		return
 	}
-	_, err = localsql.SQLdb.Exec("INSERT INTO USERA(username, password, bucketname) VALUES(?,?,?)",
-		strings.ToUpper(username), password, strings.ToLower(username))
+	_, err = localsql.SQLdb.Exec("INSERT INTO USERA(username, password, bucketname, metadata) VALUES(?,?,?,?)",
+		strings.ToUpper(username), password, strings.ToLower(username), metaFlag)
 	if err != nil {
 		fmt.Printf("error table USERA insert  %[1]v\n", err)
 		return

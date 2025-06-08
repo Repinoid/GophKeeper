@@ -28,6 +28,7 @@ func loginFlagLocal(loginFlag string) (err error) {
 	}
 	return
 }
+
 func listFlagLocal() (err error) {
 	list, err := localbase.GetList(*localsql, strings.ToUpper(currentUser))
 	if err != nil {

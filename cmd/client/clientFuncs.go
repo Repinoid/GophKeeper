@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/models"
@@ -31,6 +32,10 @@ func Login(ctx context.Context, client pb.GkeeperClient, username, password stri
 		return "", errors.New("login did not return token")
 	}
 	models.Sugar.Debugf("%+v", resp.Reply)
+	// сохраняем имя юзера
+	if err := os.WriteFile("currentuser.txt", []byte(username), 0666); err != nil {
+		return "", errors.New("can't write to currentuser.txt")
+	}
 	return
 }
 
