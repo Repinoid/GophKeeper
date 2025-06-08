@@ -12,6 +12,20 @@ import (
 )
 
 func loginFlagLocal(loginFlag string) (err error) {
+	str := strings.ReplaceAll(loginFlag, " ", "")
+	args := strings.Split(str, ",")
+	if len(args) != 2 {
+		return errors.New("wrong number of arguments, should be <username, password>")
+	}
+	err = localbase.Login(*localsql, args[0], args[1])
+	if err != nil {
+		fmt.Println("Wrong username/password")
+		os.Exit(0)
+	}
+	// сохраняем имя юзера
+	if err := os.WriteFile("currentuser.txt", []byte(args[0]), 0666); err != nil {
+		return errors.New("can't write to currentuser.txt")
+	}
 	return
 }
 func listFlagLocal() (err error) {

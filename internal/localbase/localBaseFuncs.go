@@ -39,6 +39,19 @@ func AddUser(localsql LocalDB, username, password string) (err error) {
 	return
 }
 
+func Login(localsql LocalDB, username, password string) (err error) {
+	order := "SELECT password from USERA WHERE username = ? ;"
+	row := localsql.SQLdb.QueryRow(order, strings.ToUpper(username))
+	var passHash = ""
+	err = row.Scan(&passHash)
+	if err != nil {
+		models.Sugar.Debug(err)
+		return
+	}
+	err = checkPassword(passHash, password)
+	return
+}
+
 // PutFileParams - внесение данных о записи в локальную БД, запускается после подобного для БД сервера
 func PutFileParams(localsql LocalDB, object_id int32, username, fileURL, dataType, metaData string) (err error) {
 	username = strings.ToUpper(username)

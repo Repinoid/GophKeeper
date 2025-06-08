@@ -103,12 +103,15 @@ func main() {
 
 }
 
-// если сервер доступен 
+// если сервер доступен
 func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 	// временное решение по хранению токена в файле. создаётся при вызове Login
 	tokenB, err := os.ReadFile("token.txt")
 	if err == nil {
 		token = string(tokenB)
+	} else {
+		fmt.Println("You are not logged. client -login=\"username, password\"")
+		os.Exit(0)
 	}
 
 	client := pb.NewGkeeperClient(conn)
@@ -163,12 +166,15 @@ func runGrpc(ctx context.Context, conn *grpc.ClientConn) (err error) {
 	return
 }
 
-// если сервер в отключке - юзаем локальную базу. 
+// если сервер в отключке - юзаем локальную базу.
 func runLocal() (err error) {
-	// временное решение по хранению токена в файле. создаётся при вызове Login
-	tokenB, err := os.ReadFile("token.txt")
+	// имя текущего пользователя
+	tokenB, err := os.ReadFile("currentuser.txt")
 	if err == nil {
-		token = string(tokenB)
+		currentUser = string(tokenB)
+	} else {
+		fmt.Println("You are not logged. client -login=\"username, password\"")
+		os.Exit(0)
 	}
 
 	if loginFlag != "" {

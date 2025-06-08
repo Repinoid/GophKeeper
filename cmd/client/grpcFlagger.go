@@ -45,6 +45,11 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 	}
 	token := ""
 	token, err = Login(ctx, client, args[0], args[1])
+	if err != nil {
+		fmt.Println("Wrong username/password")
+		os.Exit(0)
+	}
+	// сохраняем токен локально
 	if err := os.WriteFile("token.txt", []byte(token), 0666); err != nil {
 		return errors.New("can't write to token.txt")
 	}
