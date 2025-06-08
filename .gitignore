@@ -6,6 +6,11 @@ xl*
 */.minio.sys/
 .minio.sys/
 
+*.db
+*.text
+*.card
+*.file
+
 vaultage/vault/
 vault/backend/
 
