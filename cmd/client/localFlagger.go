@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
@@ -29,10 +30,11 @@ func listFlagLocal() (err error) {
 }
 
 func showFlagLocal(showFlag int32) (err error) {
+
 	by, err := localbase.GetRecordHead(*localsql, showFlag)
 	if err != nil {
 		fmt.Printf("no record with number %d\n", showFlag)
-		return fmt.Errorf("no record with number %d", showFlag)
+		return nil // fmt.Errorf("no record with number %d", showFlag)
 	}
 	fnam := models.LocalS3Dir + "/" + strings.ToLower(by.GetFilekey()) + "/" + by.GetFileurl()
 	fcontent, err := os.ReadFile(fnam)
@@ -61,5 +63,29 @@ func showFlagLocal(showFlag int32) (err error) {
 }
 
 func getFileFlagLocal(getFileFlag int32) (err error) {
-	return
+
+	by, err := localbase.GetRecordHead(*localsql, getFileFlag)
+	if err != nil {
+		fmt.Printf("no record with number %d\n", showFlag)
+		return nil // fmt.Errorf("no record with number %d", showFlag)
+	}
+	fnam := models.LocalS3Dir + "/" + strings.ToLower(by.GetFilekey()) + "/" + by.GetFileurl()
+	fcontent, err := os.ReadFile(fnam)
+	if err != nil {
+		return
+	}
+
+	fileToSave := ""
+	if fnameFlag == "" {
+		fileToSave = by.GetFileurl()
+	} else {
+		fileToSave = fnameFlag
+	}
+	if err := os.WriteFile(fileToSave, fcontent, 0666); err != nil {
+		return errors.New("can't write to token.txt")
+	}
+	fmt.Printf("file:\t%s\nmeta:\t%s\ntype:\t%s\ncreated:\t%s\nsaved to:\t%s\n",
+		by.GetFileurl(), by.GetMetadata(), by.GetDataType(), by.GetCreatedAt().AsTime().Format(time.RFC3339), fileToSave)
+	return nil
+
 }

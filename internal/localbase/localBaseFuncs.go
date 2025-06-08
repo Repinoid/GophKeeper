@@ -138,7 +138,7 @@ func GetRecordHead(localsql LocalDB, id int32) (head *pb.ObjectParams, err error
 	// filekey - for username here
 	err = row.Scan(&ols.Filekey, &ols.Fileurl, &ols.DataType, &ols.Metadata, &pgTime)
 	if err != nil {
-		models.Sugar.Debugf("db.Query %+v\n", err)
+		//models.Sugar.Debugf("db.Query %+v\n", err)
 		return
 	}
 	ols.CreatedAt = timestamppb.New(pgTime)
