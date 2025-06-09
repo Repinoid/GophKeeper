@@ -26,6 +26,7 @@ func Login(ctx context.Context, client pb.GkeeperClient, username, password stri
 	resp, err := client.LoginUser(ctx, req)
 	if err != nil {
 		return
+		
 	}
 	token = resp.GetToken()
 	if token == "" {
