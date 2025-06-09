@@ -57,6 +57,18 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 	return tx.Commit(ctx)
 }
 
+// AddUser запись нового юзера в таблицу
+func (dataBase *DBstruct) RemoveUser(ctx context.Context, userName string) (err error) {
+	db := dataBase.DB
+
+	order := "DELETE FROM USERA WHERE username = $1 ;"
+	_, err = db.Exec(ctx, order, strings.ToUpper(userName))
+	if err != nil {
+		return fmt.Errorf("delete user error is %w", err)
+	}
+	return
+}
+
 func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, password string) (yes bool) {
 	userName = strings.ToUpper(userName)
 	db := dataBase.DB

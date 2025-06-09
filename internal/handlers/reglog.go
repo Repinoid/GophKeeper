@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	_ "net/http/pprof"
+	"regexp"
 	"strings"
 
 	pb "gorsovet/cmd/proto"
@@ -42,6 +43,13 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		response.Reply = "Empty username or password"
 		return &response, status.Error(codes.InvalidArgument, response.Reply)
 	}
+	// username - only latins & digits
+	if !regexp.MustCompile(`^[a-zA-Z\d]+$`).MatchString(userName) || len(userName) > 64 {
+		response.Success = false
+		response.Reply = "Username - latin symbols & digits"
+		return &response, status.Error(codes.InvalidArgument, response.Reply)
+	}
+
 	metadata := req.GetMetadata()
 
 	yes, _ := db.IfUserExists(ctx, userName)
@@ -69,7 +77,15 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 	}
 	// создаём бакет с именем userName но LowerCase
 	err = minios3.CreateBucket(ctx, models.MinioClient, strings.ToLower(userName))
+	// если ошибка создания бакета - удаляем созданного юзера
 	if err != nil {
+		err1 := db.RemoveUser(ctx, userName)
+		if err1 != nil {
+			models.Sugar.Debugln(err)
+			response.Success = false
+			response.Reply = "Remove user error after create bucket error " + userName
+			return &response, err
+		}
 		models.Sugar.Debugln(err)
 		response.Success = false
 		response.Reply = "Create \"" + strings.ToLower(userName) + "\" bucket error"

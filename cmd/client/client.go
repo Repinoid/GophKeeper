@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	gPort       = ":3200"
+	//	gPort       = ":3200"
 	token       = ""
 	localsql    *localbase.LocalDB
 	currentUser = ""
@@ -65,7 +65,7 @@ func main() {
 	if err != nil {
 		models.Sugar.Fatalf("cannot load TLS credentials: ", err)
 	}
-	conn, err := grpc.NewClient(gPort, grpc.WithTransportCredentials(tlsCreds))
+	conn, err := grpc.NewClient(models.Gport, grpc.WithTransportCredentials(tlsCreds))
 
 	// Проверяем состояние соединения - нихрена не работает GetState(), определяем статус сервера через PingServer, это healthcheck
 	cr := conn.GetState()
