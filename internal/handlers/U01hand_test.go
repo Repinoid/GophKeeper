@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	pb "gorsovet/cmd/proto"
 	"io"
 	_ "net/http/pprof"
@@ -9,8 +8,6 @@ import (
 
 	"gorsovet/internal/dbase"
 	"gorsovet/internal/models"
-
-	"google.golang.org/grpc/metadata"
 )
 
 func (suite *TstHand) Test01CreateBases() {
@@ -132,47 +129,4 @@ func (suite *TstHand) Test04Greceiver() {
 	server := suite.serv
 	err = server.Greceiver(mockStream)
 	suite.Require().NoError(err)
-}
-
-// MockClientStream обманка stream pb.Gkeeper_GreceiverServer
-type MockClientStream struct {
-	Ctx         context.Context
-	recvMsgs    []*pb.ReceiverChunk
-	currentRecv int
-}
-
-func (m *MockClientStream) Context() context.Context {
-	return m.Ctx
-}
-
-func (m *MockClientStream) SendMsg(msg interface{}) error {
-	return nil
-}
-
-func (m *MockClientStream) RecvMsg(msg interface{}) error {
-	return nil
-}
-
-func (m *MockClientStream) SendAndClose(a *pb.ReceiverResponse) error {
-	return nil
-}
-
-func (m *MockClientStream) SendHeader(metadata.MD) error {
-	return nil
-}
-
-func (m *MockClientStream) SetHeader(metadata.MD) error {
-	return nil
-}
-
-func (m *MockClientStream) SetTrailer(metadata.MD) {
-	
-}
-func (m *MockClientStream) Recv() (a *pb.ReceiverChunk, err error) {
-	if m.currentRecv >= len(m.recvMsgs) {
-		return nil, io.EOF
-	}
-	msg := m.recvMsgs[m.currentRecv]
-	m.currentRecv++
-	return msg, nil
 }
