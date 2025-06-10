@@ -1,1 +1,0 @@
-openssl req -x509 -newkey rsa:4096 -keyout private.key -out public.crt -days 365 -nodes -subj "/CN=localhost"   -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"

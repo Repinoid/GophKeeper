@@ -1,1 +1,0 @@
-openssl req -new -x509 -nodes -days 3650 -newkey rsa:2048 -keyout certs/private.key -out certs/public.crt -config cert.conf -extensions 'v3_req'
