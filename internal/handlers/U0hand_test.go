@@ -136,6 +136,9 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 	//endpoint := fmt.Sprintf("%s:%s", host, port.Port())
 	endpoint, err := minioContainer.Endpoint(suite.ctx, "")
 	suite.Require().NoError(err)
+
+	models.PublicCrt = "../../cmd/tls/public.crt"
+
 	suite.minioClient, err = minios3.ConnectToS3(endpoint, "minioadmin", "minioadmin")
 	suite.Require().NoError(err)
 	// клиент для функций минио в models.MinioClient

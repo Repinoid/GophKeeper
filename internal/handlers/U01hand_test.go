@@ -124,10 +124,13 @@ func (suite *TstHand) Test04Greceiver() {
 	}
 	firstChunk.Content = buffer[:n]
 
+	msgs := make([]*pb.ReceiverChunk, 1)
+	msgs[0] = firstChunk
+
 	// Создаем mock stream
 	mockStream := &MockClientStream{
-		Ctx: context.Background(),
-		
+		Ctx:      context.Background(),
+		recvMsgs: msgs,
 		//	RecvMsg:  &pb.ReceiverResponse{Success: true},
 		HeaderMD: metadata.New(map[string]string{"header-key": "value"}),
 	}
@@ -140,9 +143,11 @@ func (suite *TstHand) Test04Greceiver() {
 // MockClientStream реализует grpc.ClientStream для тестирования
 type MockClientStream struct {
 	grpc.ClientStream
-	Ctx       context.Context
-	SentItems []*pb.ReceiverChunk
-//	RecvMsg   []*pb.ReceiverChunk
+	Ctx         context.Context
+	SentItems   []*pb.ReceiverChunk
+	currentRecv int
+	recvMsgs    []*pb.ReceiverChunk
+	//	RecvMsg   []*pb.ReceiverChunk
 	RecvError error
 	HeaderMD  metadata.MD
 	TrailerMD metadata.MD
@@ -189,6 +194,10 @@ func (m *MockClientStream) SetTrailer(metadata.MD) {
 	//return //m.TrailerMD
 }
 func (m *MockClientStream) Recv() (a *pb.ReceiverChunk, err error) {
-	//func (m *MockClientStream) Recv()  {
-	return
+	if m.currentRecv >= len(m.recvMsgs) {
+		return nil, io.EOF
+	}
+	msg := m.recvMsgs[m.currentRecv]
+	m.currentRecv++
+	return msg, nil
 }
