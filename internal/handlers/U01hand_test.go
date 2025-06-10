@@ -10,7 +10,6 @@ import (
 	"gorsovet/internal/dbase"
 	"gorsovet/internal/models"
 
-	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -108,10 +107,6 @@ func (suite *TstHand) Test03LoginUser() {
 }
 
 func (suite *TstHand) Test04Greceiver() {
-	//	tlsCreds, err := privacy.LoadClientTLSCredentials("../../cmd/tls/public.crt")
-	//	suite.Require().NoError(err)
-	//	conn, err := grpc.NewClient(models.Gport, grpc.WithTransportCredentials(tlsCreds))
-	//	suite.Require().NoError(err)
 
 	text := "text to send to greceiver"
 	reader := strings.NewReader(text)
@@ -129,10 +124,9 @@ func (suite *TstHand) Test04Greceiver() {
 
 	// Создаем mock stream
 	mockStream := &MockClientStream{
-		Ctx:      context.Background(),
+		//Ctx:      context.Background(),
+		Ctx:      suite.ctx,
 		recvMsgs: msgs,
-		//	RecvMsg:  &pb.ReceiverResponse{Success: true},
-	//	HeaderMD: metadata.New(map[string]string{"header-key": "value"}),
 	}
 
 	server := suite.serv
@@ -140,12 +134,8 @@ func (suite *TstHand) Test04Greceiver() {
 	suite.Require().NoError(err)
 }
 
-// MockClientStream реализует grpc.ClientStream для тестирования
+// MockClientStream обманка stream pb.Gkeeper_GreceiverServer
 type MockClientStream struct {
-	//HeaderMD  metadata.MD
-	//TrailerMD metadata.MD
-
-	mock.Mock
 	Ctx         context.Context
 	recvMsgs    []*pb.ReceiverChunk
 	currentRecv int
@@ -176,7 +166,7 @@ func (m *MockClientStream) SetHeader(metadata.MD) error {
 }
 
 func (m *MockClientStream) SetTrailer(metadata.MD) {
-	//return //m.TrailerMD
+	
 }
 func (m *MockClientStream) Recv() (a *pb.ReceiverChunk, err error) {
 	if m.currentRecv >= len(m.recvMsgs) {

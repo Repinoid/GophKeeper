@@ -75,6 +75,8 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 	// ***************** POSTGREs part end ************************************
 
 	// ***************** MINIO part begin ************************************
+
+	// HostConfigModifier требует абсолютный путь
 	absTLSPath, err := filepath.Abs("../../cmd/tls")
 	suite.Require().NoError(err)
 	// Запуск контейнера MINIO
@@ -92,6 +94,7 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 			hostConfig.Binds = []string{
 				absTLSPath + ":/root/.minio/certs:ro",
 			}
+			// рудименты от попыток назначить 9090, пусть останется для примера
 			// hostConfig.PortBindings = nat.PortMap{
 			// 	"9000/tcp": []nat.PortBinding{
 			// 		{
@@ -111,7 +114,7 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 		Started:          true,
 	})
 	suite.Require().NoError(err)
-	// Terminate в TearDownSuite, дефер не нужен
+	// Terminate в TearDownSuite, дефер тут не нужен
 	//	defer postgresContainer.Terminate(suite.ctx)
 
 	// Получение хоста и порта
@@ -133,16 +136,19 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 	suite.Require().NoError(err)
 
 	// Best Practices - Reuse the client: Create one client instance and reuse it throughout your application.
-	//endpoint := fmt.Sprintf("%s:%s", host, port.Port())
 	endpoint, err := minioContainer.Endpoint(suite.ctx, "")
 	suite.Require().NoError(err)
 
+	// тесты запускаются из /internal/handlers. Поэтому надо подняться на пару этажей выше и нырнуть в cmd/tls/
 	models.PublicCrt = "../../cmd/tls/public.crt"
 
+	//  "minioadmin", "minioadmin" - по умолчанию, при других значениях testcontainers не срабатывает 
 	suite.minioClient, err = minios3.ConnectToS3(endpoint, "minioadmin", "minioadmin")
 	suite.Require().NoError(err)
+
 	// клиент для функций минио в models.MinioClient
 	models.MinioClient = suite.minioClient
+
 	// ***************** MINIO part end ************************************
 
 	models.Sugar.Infoln("SetupTest() ---------------------")
@@ -151,7 +157,7 @@ func (suite *TstHand) SetupSuite() { // выполняется перед тес
 func (suite *TstHand) TearDownSuite() { // // выполняется после всех тестов
 	models.Sugar.Infof("Spent %v\n", time.Since(suite.t))
 	//	suite.dataBase.CloseBase()
-	// прикрываем контейнер с БД
+	// прикрываем контейнер с БД, для этого и завели переменную в TstHand struct
 	suite.postgresContainer.Terminate(suite.ctx)
 }
 
