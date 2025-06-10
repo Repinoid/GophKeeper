@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	pb "gorsovet/cmd/proto"
+	"gorsovet/internal/models"
 	"io"
 
 	"google.golang.org/grpc/metadata"
@@ -48,4 +51,47 @@ func (m *MockClientStream) SetHeader(metadata.MD) error {
 	return nil
 }
 func (m *MockClientStream) SetTrailer(metadata.MD) {
+}
+
+func makeMockStream(ctx context.Context, data *pb.ReceiverChunk) (mockStream *MockClientStream, err error) {
+
+	// data.Content - ALL data to send
+	content := make([]byte, len(data.Content))
+	// make copy of data.Content, т.к. потом это поле будет перезаписываться
+	n := copy(content, data.Content)
+	if n != len(data.Content) {
+		models.Sugar.Debugln("не перекопировалось полностью")
+		return nil, errors.New("не перекопировалось")
+	}
+	reader := bytes.NewReader(data.Content)
+	buffer := make([]byte, 64*1024) // 64KB chunks
+
+	// Send first chunk with filename
+	firstChunk := data
+	n, err = reader.Read(buffer)
+	if err != nil && err != io.EOF {
+		return
+	}
+	firstChunk.Content = buffer[:n]
+	msgs := []*pb.ReceiverChunk{}
+	msgs = append(msgs, firstChunk)
+
+	// Send remaining chunks
+	for {
+		n, err := reader.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		chunk := pb.ReceiverChunk{Content: buffer[:n]}
+		msgs = append(msgs, &chunk)
+	}
+	mockS := &MockClientStream{
+		Ctx:      ctx,
+		recvMsgs: msgs,
+	}
+	mockStream = mockS
+	return
 }
