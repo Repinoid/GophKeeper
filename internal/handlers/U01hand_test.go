@@ -10,7 +10,7 @@ import (
 	"gorsovet/internal/dbase"
 	"gorsovet/internal/models"
 
-	"google.golang.org/grpc"
+	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -132,7 +132,7 @@ func (suite *TstHand) Test04Greceiver() {
 		Ctx:      context.Background(),
 		recvMsgs: msgs,
 		//	RecvMsg:  &pb.ReceiverResponse{Success: true},
-		HeaderMD: metadata.New(map[string]string{"header-key": "value"}),
+	//	HeaderMD: metadata.New(map[string]string{"header-key": "value"}),
 	}
 
 	server := suite.serv
@@ -142,15 +142,13 @@ func (suite *TstHand) Test04Greceiver() {
 
 // MockClientStream реализует grpc.ClientStream для тестирования
 type MockClientStream struct {
-	grpc.ClientStream
+	//HeaderMD  metadata.MD
+	//TrailerMD metadata.MD
+
+	mock.Mock
 	Ctx         context.Context
-	SentItems   []*pb.ReceiverChunk
-	currentRecv int
 	recvMsgs    []*pb.ReceiverChunk
-	//	RecvMsg   []*pb.ReceiverChunk
-	RecvError error
-	HeaderMD  metadata.MD
-	TrailerMD metadata.MD
+	currentRecv int
 }
 
 func (m *MockClientStream) Context() context.Context {
@@ -158,38 +156,25 @@ func (m *MockClientStream) Context() context.Context {
 }
 
 func (m *MockClientStream) SendMsg(msg interface{}) error {
-	m.SentItems = append(m.SentItems, msg.(*pb.ReceiverChunk))
 	return nil
 }
 
-// func (m *MockClientStream) RecvMsg(msg *pb.ReceiverChunk) error {
-// 	if m.RecvError != nil {
-// 		return m.RecvError
-// 	}
-// 	if m.RecvMsg == nil {
-// 		return io.EOF
-// 	}
-// 	//reflect.ValueOf(msg).Elem().Set(reflect.ValueOf(m.RecvMsg).Elem())
-// 	return nil
-// }
+func (m *MockClientStream) RecvMsg(msg interface{}) error {
+	return nil
+}
 
 func (m *MockClientStream) SendAndClose(a *pb.ReceiverResponse) error {
 	return nil
 }
 
-func (m *MockClientStream) Header() (metadata.MD, error) {
-	return m.HeaderMD, nil
-}
 func (m *MockClientStream) SendHeader(metadata.MD) error {
 	return nil
 }
+
 func (m *MockClientStream) SetHeader(metadata.MD) error {
 	return nil
 }
 
-func (m *MockClientStream) Trailer() metadata.MD {
-	return m.TrailerMD
-}
 func (m *MockClientStream) SetTrailer(metadata.MD) {
 	//return //m.TrailerMD
 }
