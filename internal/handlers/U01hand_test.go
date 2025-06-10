@@ -1,15 +1,17 @@
 package handlers
 
 import (
+	"context"
 	pb "gorsovet/cmd/proto"
+	"io"
 	_ "net/http/pprof"
 	"strings"
 
 	"gorsovet/internal/dbase"
 	"gorsovet/internal/models"
-	"gorsovet/internal/privacy"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func (suite *TstHand) Test01CreateBases() {
@@ -106,12 +108,87 @@ func (suite *TstHand) Test03LoginUser() {
 }
 
 func (suite *TstHand) Test04Greceiver() {
-	tlsCreds, err := privacy.LoadClientTLSCredentials("../../cmd/tls/public.crt")
-	suite.Require().NoError(err)
-	conn, err := grpc.NewClient(models.Gport, grpc.WithTransportCredentials(tlsCreds))
-	suite.Require().NoError(err)
+	//	tlsCreds, err := privacy.LoadClientTLSCredentials("../../cmd/tls/public.crt")
+	//	suite.Require().NoError(err)
+	//	conn, err := grpc.NewClient(models.Gport, grpc.WithTransportCredentials(tlsCreds))
+	//	suite.Require().NoError(err)
 
-	client := pb.NewGkeeperClient(conn)
-	stream, err := client.Greceiver(suite.ctx)
-	
+	text := "text to send to greceiver"
+	reader := strings.NewReader(text)
+	buffer := make([]byte, 64*1024) // 64KB chunks
+	// Send first chunk with filename
+	firstChunk := &pb.ReceiverChunk{Filename: "fname.test", Token: suite.token, Metadata: "meta test", DataType: "text", ObjectId: 0}
+	n, err := reader.Read(buffer)
+	if err != nil && err != io.EOF {
+		return
+	}
+	firstChunk.Content = buffer[:n]
+
+	// Создаем mock stream
+	mockStream := &MockClientStream{
+		Ctx: context.Background(),
+		
+		//	RecvMsg:  &pb.ReceiverResponse{Success: true},
+		HeaderMD: metadata.New(map[string]string{"header-key": "value"}),
+	}
+
+	server := suite.serv
+	err = server.Greceiver(mockStream)
+	suite.Require().NoError(err)
+}
+
+// MockClientStream реализует grpc.ClientStream для тестирования
+type MockClientStream struct {
+	grpc.ClientStream
+	Ctx       context.Context
+	SentItems []*pb.ReceiverChunk
+//	RecvMsg   []*pb.ReceiverChunk
+	RecvError error
+	HeaderMD  metadata.MD
+	TrailerMD metadata.MD
+}
+
+func (m *MockClientStream) Context() context.Context {
+	return m.Ctx
+}
+
+func (m *MockClientStream) SendMsg(msg interface{}) error {
+	m.SentItems = append(m.SentItems, msg.(*pb.ReceiverChunk))
+	return nil
+}
+
+// func (m *MockClientStream) RecvMsg(msg *pb.ReceiverChunk) error {
+// 	if m.RecvError != nil {
+// 		return m.RecvError
+// 	}
+// 	if m.RecvMsg == nil {
+// 		return io.EOF
+// 	}
+// 	//reflect.ValueOf(msg).Elem().Set(reflect.ValueOf(m.RecvMsg).Elem())
+// 	return nil
+// }
+
+func (m *MockClientStream) SendAndClose(a *pb.ReceiverResponse) error {
+	return nil
+}
+
+func (m *MockClientStream) Header() (metadata.MD, error) {
+	return m.HeaderMD, nil
+}
+func (m *MockClientStream) SendHeader(metadata.MD) error {
+	return nil
+}
+func (m *MockClientStream) SetHeader(metadata.MD) error {
+	return nil
+}
+
+func (m *MockClientStream) Trailer() metadata.MD {
+	return m.TrailerMD
+}
+func (m *MockClientStream) SetTrailer(metadata.MD) {
+	//return //m.TrailerMD
+}
+func (m *MockClientStream) Recv() (a *pb.ReceiverChunk, err error) {
+	//func (m *MockClientStream) Recv()  {
+	return
 }

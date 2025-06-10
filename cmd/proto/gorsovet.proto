@@ -53,6 +53,7 @@ message ReceiverChunk {
 message ReceiverResponse {
   bool success = 1;
   int32 size = 2;
+  int32 SuccessCount = 3;
 }
 
 
