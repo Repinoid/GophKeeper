@@ -244,6 +244,7 @@ func (dataBase *DBstruct) GetObjectIdParams(ctx context.Context, username string
 	var pgTime time.Time
 	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata, &obj.Size, &pgTime)
 	obj.CreatedAt = timestamppb.New(pgTime)
+
 	if err != nil {
 		models.Sugar.Debugf("row.Scan(&obj.Fileurl, %+v\n", err)
 		return
