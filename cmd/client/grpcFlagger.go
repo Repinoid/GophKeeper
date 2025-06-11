@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 
 	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
+
+	"google.golang.org/grpc/metadata"
 )
 
 func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag string) (err error) {
@@ -66,11 +69,7 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 }
 
 func putTextFlagFunc(ctx context.Context, client pb.GkeeperClient, putTextFlag string) (err error) {
-	stream, err := client.Greceiver(ctx)
-	if err != nil {
-		models.Sugar.Debugf("client.Greceiver %v", err)
-		return err
-	}
+
 	// генерируем случайное имя файла, 8 байт, в HEX распухнет до 16 символов
 	forName := make([]byte, 8)
 	_, err = rand.Read(forName)
@@ -79,6 +78,22 @@ func putTextFlagFunc(ctx context.Context, client pb.GkeeperClient, putTextFlag s
 	}
 	// переводим в HEX
 	objectName := hex.EncodeToString(forName) + ".text"
+
+	// Create metadata
+	md := metadata.Pairs(
+		"Token", token,
+		"MetaData", metaFlag,
+		"DataType", "file",
+		"ObjectId", strconv.Itoa(updateFlag),
+		"FileName", objectName,
+	)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	stream, err := client.Greceiver(ctx)
+	if err != nil {
+		models.Sugar.Debugf("client.Greceiver %v", err)
+		return err
+	}
 
 	// Send text
 	resp, err := sendText(stream, putTextFlag, objectName, "text")
@@ -91,11 +106,7 @@ func putTextFlagFunc(ctx context.Context, client pb.GkeeperClient, putTextFlag s
 }
 
 func putFileFlagFunc(ctx context.Context, client pb.GkeeperClient, putFileFlag string) (err error) {
-	stream, err := client.Greceiver(ctx)
-	if err != nil {
-		models.Sugar.Debugf("client.Greceiver %v", err)
-		return err
-	}
+
 	// получаем имя файла без пути
 	fname := filepath.Base(putFileFlag)
 	// генерируем случайный префикс для имени файла, 4 байта, в HEX распухнет до 8 символов
@@ -106,6 +117,23 @@ func putFileFlagFunc(ctx context.Context, client pb.GkeeperClient, putFileFlag s
 	}
 	// переводим в HEX
 	objectName := hex.EncodeToString(forName) + "_" + fname
+
+	//{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
+	// Create metadata
+	md := metadata.Pairs(
+		"Token", token,
+		"MetaData", metaFlag,
+		"DataType", "file",
+		"ObjectId", strconv.Itoa(updateFlag),
+		"FileName", objectName,
+	)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	stream, err := client.Greceiver(ctx)
+	if err != nil {
+		models.Sugar.Debugf("client.Greceiver %v", err)
+		return err
+	}
 
 	// Send a file
 	resp, err := sendFile(stream, putFileFlag, objectName)

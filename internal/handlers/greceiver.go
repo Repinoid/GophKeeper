@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"io"
 	_ "net/http/pprof"
+	"strconv"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/dbase"
@@ -14,25 +14,69 @@ import (
 	"gorsovet/internal/privacy"
 
 	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err error) {
 
-	ctx := context.Background()
-	// First message should contain the filename
-	firstChunk, err := stream.Recv()
-	if err != nil {
-		models.Sugar.Debugf("stream.Recv()  %v", err)
-		return err
+	var fname, dataType, token, metaData string
+	var object_id int32
+
+	// считываем параметры потока из заголовка
+	ctx := stream.Context()
+	md, ok := metadata.FromIncomingContext(stream.Context())
+	if ok {
+		values := md.Get("Token")
+		if len(values) == 0 {
+			models.Sugar.Debugf("no Token")
+			return status.Error(codes.NotFound, "нет Token")
+		}
+		token = values[0]
+
+		values = md.Get("FileName")
+		if len(values) == 0 {
+			models.Sugar.Debugf("no filename")
+			return status.Error(codes.NotFound, "нет filename")
+		}
+		fname = values[0]
+
+		values = md.Get("DataType")
+		if len(values) == 0 {
+			models.Sugar.Debugf("no DataType")
+			return status.Error(codes.NotFound, "нет Datatype")
+		}
+		dataType = values[0]
+
+		values = md.Get("MetaData")
+		if len(values) == 0 {
+			models.Sugar.Debugf("no MetaData")
+			return status.Error(codes.NotFound, "нет MetaData")
+		}
+		metaData = values[0]
+
+		values = md.Get("ObjectId")
+		if len(values) == 0 {
+			models.Sugar.Debugf("no ObjectId")
+			return status.Error(codes.NotFound, "нет ObjectId")
+		}
+		object_id0, _ := strconv.Atoi(values[0])
+		object_id = int32(object_id0)
 	}
-	// get file name from first chunk
-	fname := firstChunk.GetFilename()
-	// dataType - тип записи, text file card
-	dataType := firstChunk.GetDataType()
-	// object_id номер записи в таблице для обновления, если 0 - то новая запись
-	object_id := firstChunk.GetObjectId()
-	// содержимое файла, из первого чанка. затем будем append последующие приходы
-	fileContent := firstChunk.GetContent()
+
+	fileContent := []byte{}
+	// вычитываем контент посылки
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		fileContent = append(fileContent, chunk.GetContent()...)
+	}
 
 	// затем подсоединяемся к Базе Данных, недоступна - отбой
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
@@ -42,7 +86,7 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	}
 	defer db.CloseBase()
 
-	token := firstChunk.GetToken()
+	//token = firstChunk.GetToken()
 	userName, err := db.GetUserNameByToken(ctx, token)
 	if err != nil {
 		models.Sugar.Debugf("GetUserNameByToken  %v", err)
@@ -66,7 +110,7 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 		models.Sugar.Debugf("privacy.DecryptB2B  %v", err)
 		return
 	}
-	metadata := firstChunk.GetMetadata()
+	//metaData = firstChunk.GetMetadata()
 
 	// создаём случайный ключ для шифрования файла
 	fileKey := make([]byte, 32)
@@ -77,24 +121,12 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	// NewSSEC returns a new server-side-encryption using SSE-C and the provided key. The key must be 32 bytes long
 	// sse - криптоключ для шифрования файла при записи в Minio
 	// Requests specifying Server Side Encryption with Customer provided keys must be made over a secure connection.
-	// при использовании собственного ключа требует TLS клиент-сервер
+	// при использовании собственного ключа MINIO требует TLS клиент-сервер
 	sse, err := encrypt.NewSSEC(fileKey)
 	if err != nil {
 		return
 	}
 
-	// Process subsequent chunks
-	for {
-		chunk, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		fileContent = append(fileContent, chunk.GetContent()...)
-
-	}
 	info, err := minios3.S3PutBytesToFile(ctx, models.MinioClient, bucketName, fname, fileContent, sse)
 	if err != nil {
 		return
@@ -104,7 +136,7 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 	// переводим в HEX
 	objectKeyHex := hex.EncodeToString(objectKey)
 
-	err = db.PutFileParams(ctx, object_id, userName, fname, dataType, objectKeyHex, metadata, int32(info.Size))
+	err = db.PutFileParams(ctx, object_id, userName, fname, dataType, objectKeyHex, metaData, int32(info.Size))
 	if err != nil {
 		return
 	}

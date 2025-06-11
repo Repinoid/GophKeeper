@@ -16,6 +16,8 @@ import (
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/localbase"
 	"gorsovet/internal/models"
+
+	"google.golang.org/grpc/metadata"
 )
 
 func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp *pb.ReceiverResponse, err error) {
@@ -40,23 +42,25 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 	}
 	defer fileOut.Close()
 
-	// Send first chunk with filename etc
-	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
-	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return
-	}
-	firstChunk.Content = buffer[:n]
+	// // Send first chunk with filename etc
+	// firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
 
-	if err = stream.Send(firstChunk); err != nil {
-		return
-	}
-	// write first chunk to local s3
-	_, err = fileOut.Write(buffer[:n])
-	if err != nil {
-		return
-	}
-	// Send remaining chunks
+	// n, err := file.Read(buffer)
+	// if err != nil && err != io.EOF {
+	// 	return
+	// }
+	// firstChunk.Content = buffer[:n]
+
+	// if err = stream.Send(firstChunk); err != nil {
+	// 	return
+	// }
+	// // write first chunk to local s3
+	// _, err = fileOut.Write(buffer[:n])
+	// if err != nil {
+	// 	return
+	// }
+
+	// Send chunks
 	for {
 		n, err := file.Read(buffer)
 		if err == io.EOF {
@@ -103,21 +107,21 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 	}
 	defer fileOut.Close()
 
-	// Send first chunk with filename
-	firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: dtype, ObjectId: int32(updateFlag)}
-	n, err := reader.Read(buffer)
-	if err != nil && err != io.EOF {
-		return
-	}
-	firstChunk.Content = buffer[:n]
-	if err = stream.Send(firstChunk); err != nil {
-		return
-	}
-	// write first chunk to local s3
-	_, err = fileOut.Write(buffer[:n])
-	if err != nil {
-		return
-	}
+	// // Send first chunk with filename
+	// firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: dtype, ObjectId: int32(updateFlag)}
+	// n, err := reader.Read(buffer)
+	// if err != nil && err != io.EOF {
+	// 	return
+	// }
+	// firstChunk.Content = buffer[:n]
+	// if err = stream.Send(firstChunk); err != nil {
+	// 	return
+	// }
+	// // write first chunk to local s3
+	// _, err = fileOut.Write(buffer[:n])
+	// if err != nil {
+	// 	return
+	// }
 
 	// Send remaining chunks
 	for {
@@ -148,27 +152,32 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 }
 
 func sendCard(ctx context.Context, client pb.GkeeperClient, cardData string) (err error) {
+	// разбиваем флаг карты на слайс строк, разделитель - запятая
 	args := strings.Split(cardData, ",")
 	if len(args) != 4 {
 		return errors.New("wrong number of arguments, should be cardnumber digits, expiration MM/YY, CSV, cardholder name\"")
 	}
+	// первая строка слайса - номер карты
 	cardNumStr := strings.ReplaceAll(args[0], " ", "")
 	cnumi, err := strconv.ParseInt(cardNumStr, 10, 64)
 	// номер карты должен быть не менее 13 и не более 19 цифр, удовлетворять алгоритму Луна
 	if len(cardNumStr) < 13 || len(cardNumStr) > 19 || !LuhnCheck(cardNumStr) || err != nil {
 		return errors.New("wrong Card Number. Not real")
 	}
+	// вторая строка в слайсе срок действия карты
 	exp := strings.ReplaceAll(args[1], " ", "")
 	// should use raw string (`...`) with regexp.MustCompile to avoid having to escape twice (S1007)
 	re := regexp.MustCompile(`^\d\d/\d\d$`) // MM/YY
 	if !re.MatchString(exp) {
 		return errors.New("wrong Card Number. Not real")
 	}
+	// третья строка - CSV
 	csv := strings.ReplaceAll(args[2], " ", "")
 	re = regexp.MustCompile(`^\d\d\d$`) // CSV 3 digits
 	if !re.MatchString(csv) {
 		return errors.New("wrong CSV. Proposed to be 3 digits")
 	}
+	// четвёртая строка - имя владельца
 	holder := strings.TrimSpace(args[3])
 	holder = strings.ReplaceAll(holder, "  ", " ")
 	re = regexp.MustCompile(`^[a-zA-Z\s]+$`)
@@ -181,19 +190,32 @@ func sendCard(ctx context.Context, client pb.GkeeperClient, cardData string) (er
 	if err != nil {
 		return err
 	}
-	stream, err := client.Greceiver(ctx)
-	if err != nil {
-		models.Sugar.Debugf("client.Greceiver %v", err)
-		return err
-	}
+
 	// генерируем случайный префикс имени файла, 4 байт, в HEX распухнет до 8 символов
 	forName := make([]byte, 4)
 	_, err = rand.Read(forName)
 	if err != nil {
 		return err
 	}
+
 	// переводим в HEX, add ****, add last 4 card digits
 	objectName := hex.EncodeToString(forName) + "____" + cardNumStr[len(cardNumStr)-4:] + ".card"
+	
+	// запихиваем в контекст параметры посылки на сервер
+	md := metadata.Pairs(
+		"Token", token,
+		"MetaData", metaFlag,
+		"DataType", "file",
+		"ObjectId", strconv.Itoa(updateFlag),
+		"FileName", objectName,
+	)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	stream, err := client.Greceiver(ctx)
+	if err != nil {
+		models.Sugar.Debugf("client.Greceiver %v", err)
+		return err
+	}
 
 	// Send card params as marshalled text with DataType "card"
 	resp, err := sendText(stream, string(marsh), objectName, "card")
