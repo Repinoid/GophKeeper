@@ -1,0 +1,167 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"io"
+	"os"
+	"testing"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"github.com/stretchr/testify/require"
+)
+
+var (
+	testBucketName = "testbucket"
+	testFileName   = "go.sum"
+)
+
+// TestCrypta проверка функций кодирования и раскодирования
+func TestCrypta(t *testing.T) {
+
+	testingString := "\t во поле берёзка стояла, в натуре\n"
+
+	coded, err := EncryptB2B([]byte(testingString), key)
+	require.NoError(t, err)
+
+	telo, err := DecryptB2B(coded, key)
+	require.NoError(t, err)
+
+	require.Equal(t, testingString, string(telo))
+}
+
+// TestCreateBucket good & ugly
+func TestCreateBucket(t *testing.T) {
+	minioClient, err := ConnectToS3()
+	require.NoError(t, err)
+	err = CreateBucket(context.Background(), minioClient, testBucketName)
+	require.NoError(t, err)
+	// bucket exists
+	err = CreateBucket(context.Background(), minioClient, testBucketName)
+	require.NoError(t, err)
+	err = CreateBucket(context.Background(), minioClient, testBucketName+"^&*%$")
+	require.Error(t, err)
+}
+
+// TestWriteRead тест записи бинарных данных в файл и чтения этого файла
+func TestWriteReadBytes(t *testing.T) {
+	fileContent, err := os.ReadFile(testFileName)
+	require.NoError(t, err)
+	// encrypt "filePath" file
+	encrypted, err := EncryptB2B(fileContent, key)
+	require.NoError(t, err)
+
+	minioClient, err := ConnectToS3()
+	require.NoError(t, err)
+
+	_, err = minioClient.PutObject(
+		context.Background(),
+		testBucketName,
+		"test.file",
+		bytes.NewReader(encrypted),
+		int64(len(encrypted)),
+		minio.PutObjectOptions{},
+	)
+	require.NoError(t, err)
+	object, err := minioClient.GetObject(
+		context.Background(),
+		testBucketName,
+		"test.file",
+		minio.GetObjectOptions{},
+	)
+	require.NoError(t, err)
+	defer object.Close()
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, object)
+	require.NoError(t, err)
+
+	// Convert to bytes
+	fileBytes := buf.Bytes()
+	require.Equal(t, encrypted, fileBytes)
+}
+
+// TestWriteRead тест записи бинарных данных в файл и чтения этого файла
+func TestWriteReadFile(t *testing.T) {
+
+	localFile := "./go.sum"
+	s3File := "go1.sum"
+
+	ctx := context.Background()
+	minioClient, err := ConnectToS3()
+	require.NoError(t, err)
+
+	_, err = S3PutFile(ctx, minioClient, testBucketName, s3File, localFile, key)
+	require.NoError(t, err)
+
+	contentFromS3, err := S3GetFileBytes(ctx, minioClient, testBucketName, s3File, key)
+	require.NoError(t, err)
+
+	localFileContent, err := os.ReadFile(localFile)
+	require.NoError(t, err)
+
+	require.Equal(t, contentFromS3, localFileContent)
+}
+func TestRemoves(t *testing.T) {
+	minioClient, err := ConnectToS3()
+	require.NoError(t, err)
+
+	// remove not empty bucket
+	err = S3RemoveBucket(context.Background(), minioClient, testBucketName)
+	require.Error(t, err)
+
+	// remove  file
+	err = S3RemoveFile(context.Background(), minioClient, testBucketName, "go1.sum")
+	require.NoError(t, err)
+
+	// remove  file
+	err = S3RemoveFile(context.Background(), minioClient, testBucketName, "test.file")
+	require.NoError(t, err)
+
+	// remove empty bucket
+	err = S3RemoveBucket(context.Background(), minioClient, testBucketName)
+	require.NoError(t, err)
+}
+
+func TestCrypt(t *testing.T) {
+	// fileContent, err := os.ReadFile("./go.mod")
+	// require.NoError(t, err)
+
+	minioClient, err := ConnectToS3()
+	require.NoError(t, err)
+
+	// Generate your own encryption key (32 bytes)
+	//key := []byte("01234567890123456789012345678900")
+	key := make([]byte, 32)
+
+	n, err := rand.Read(key)
+	require.NoError(t, err)
+	require.Equal(t, n, 32)
+
+	// Use SSE-C instead
+	sse, err := encrypt.NewSSEC(key)
+
+	//sse, err := encrypt.NewSSEKMS("minio-default-key", nil)
+	require.NoError(t, err)
+
+	_, err = minioClient.FPutObject(
+		context.Background(),
+		"bucketing",
+		"NewSSE.f00",
+		"./go.mod",
+
+		minio.PutObjectOptions{
+			ServerSideEncryption: sse,
+		},
+	)
+	require.NoError(t, err)
+
+	// Download SSE-C encrypted object
+	err = minioClient.FGetObject(context.Background(), "bucketing", "NewSSE.f00", "./a",
+		minio.GetObjectOptions{
+			ServerSideEncryption: sse, // same sse object used for upload
+		})
+	require.NoError(t, err)
+
+}

@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// registerFlagFunc - запускается при флаге -register
 func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag string) (err error) {
 
 	str := strings.ReplaceAll(registerFlag, " ", "")
@@ -43,7 +44,7 @@ func registerFlagFunc(ctx context.Context, client pb.GkeeperClient, registerFlag
 	err = localbase.AddUser(*localsql, args[0], args[1], metaFlag)
 	return
 }
-
+// 
 func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag string) (err error) {
 	str := strings.ReplaceAll(loginFlag, " ", "")
 	args := strings.Split(str, ",")
@@ -67,7 +68,7 @@ func loginFlagFunc(ctx context.Context, client pb.GkeeperClient, loginFlag strin
 	}
 	return
 }
-
+// putTextFlagFunc - на сервер передаётся текстовая информация, из флага -puttext
 func putTextFlagFunc(ctx context.Context, client pb.GkeeperClient, putTextFlag string) (err error) {
 
 	// генерируем случайное имя файла, 8 байт, в HEX распухнет до 16 символов
@@ -104,7 +105,7 @@ func putTextFlagFunc(ctx context.Context, client pb.GkeeperClient, putTextFlag s
 	models.Sugar.Debugf("written %d bytes\n", resp.Size)
 	return nil
 }
-
+// putTextFlagFunc - на сервер передаётся содержимое файла, из пути/имени флага -putfile
 func putFileFlagFunc(ctx context.Context, client pb.GkeeperClient, putFileFlag string) (err error) {
 
 	// получаем имя файла без пути
@@ -145,7 +146,7 @@ func putFileFlagFunc(ctx context.Context, client pb.GkeeperClient, putFileFlag s
 	models.Sugar.Debugf("written %d bytes\n", resp.Size)
 	return
 }
-
+// listFlagFunc flag -list, на экран выводится список из параметров записей
 func listFlagFunc(ctx context.Context, client pb.GkeeperClient) (err error) {
 	list, err := GetList(ctx, client)
 	if err != nil {
@@ -160,7 +161,7 @@ func listFlagFunc(ctx context.Context, client pb.GkeeperClient) (err error) {
 	}
 	return
 }
-
+// removeFlagFunc - удаляется запись с номером во флаге -remove
 func removeFlagFunc(ctx context.Context, client pb.GkeeperClient, removeFlag int32) (err error) {
 
 	fla := removeFlag
@@ -181,7 +182,7 @@ func removeFlagFunc(ctx context.Context, client pb.GkeeperClient, removeFlag int
 
 	return
 }
-
+// showFlagFunc - вывод на экран соседжимого текстовой записи или данных банковской карты
 func showFlagFunc(ctx context.Context, client pb.GkeeperClient, showFlag int32) (err error) {
 	fla := showFlag
 	if !IfIdExist(ctx, client, fla) {
@@ -220,7 +221,7 @@ func showFlagFunc(ctx context.Context, client pb.GkeeperClient, showFlag int32) 
 	}
 	return nil
 }
-
+// getFileFlagFunc скачивается файл с номером по флагу -get, если дополнительно установлен флаг -file="имя файла" - файл сохраняется по этому имени
 func getFileFlagFunc(ctx context.Context, client pb.GkeeperClient, getFileFlag int32) (err error) {
 
 	fla := getFileFlag

@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// sendFile - upload file by grpc
 func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp *pb.ReceiverResponse, err error) {
 
 	if token == "" {
@@ -41,24 +42,6 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 		return
 	}
 	defer fileOut.Close()
-
-	// // Send first chunk with filename etc
-	// firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: "file", ObjectId: int32(updateFlag)}
-
-	// n, err := file.Read(buffer)
-	// if err != nil && err != io.EOF {
-	// 	return
-	// }
-	// firstChunk.Content = buffer[:n]
-
-	// if err = stream.Send(firstChunk); err != nil {
-	// 	return
-	// }
-	// // write first chunk to local s3
-	// _, err = fileOut.Write(buffer[:n])
-	// if err != nil {
-	// 	return
-	// }
 
 	// Send chunks
 	for {
@@ -89,6 +72,7 @@ func sendFile(stream pb.Gkeeper_GreceiverClient, fpath, objectName string) (resp
 	return
 }
 
+// sendFile - upload text by grpc
 func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype string) (resp *pb.ReceiverResponse, err error) {
 
 	if token == "" {
@@ -107,23 +91,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 	}
 	defer fileOut.Close()
 
-	// // Send first chunk with filename
-	// firstChunk := &pb.ReceiverChunk{Filename: objectName, Token: token, Metadata: metaFlag, DataType: dtype, ObjectId: int32(updateFlag)}
-	// n, err := reader.Read(buffer)
-	// if err != nil && err != io.EOF {
-	// 	return
-	// }
-	// firstChunk.Content = buffer[:n]
-	// if err = stream.Send(firstChunk); err != nil {
-	// 	return
-	// }
-	// // write first chunk to local s3
-	// _, err = fileOut.Write(buffer[:n])
-	// if err != nil {
-	// 	return
-	// }
-
-	// Send remaining chunks
+	// Send  chunks
 	for {
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
@@ -151,6 +119,7 @@ func sendText(stream pb.Gkeeper_GreceiverClient, text, objectName string, dtype 
 	return
 }
 
+// sendCard
 func sendCard(ctx context.Context, client pb.GkeeperClient, cardData string) (err error) {
 	// разбиваем флаг карты на слайс строк, разделитель - запятая
 	args := strings.Split(cardData, ",")
@@ -200,7 +169,7 @@ func sendCard(ctx context.Context, client pb.GkeeperClient, cardData string) (er
 
 	// переводим в HEX, add ****, add last 4 card digits
 	objectName := hex.EncodeToString(forName) + "____" + cardNumStr[len(cardNumStr)-4:] + ".card"
-	
+
 	// запихиваем в контекст параметры посылки на сервер
 	md := metadata.Pairs(
 		"Token", token,

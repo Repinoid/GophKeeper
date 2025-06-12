@@ -11,6 +11,7 @@ import (
 	"gorsovet/internal/models"
 )
 
+// AddUser регистрация нового пользователя
 func AddUser(ctx context.Context, client pb.GkeeperClient, username, password string) (err error) {
 	req := &pb.RegisterRequest{Username: username, Password: password, Metadata: metaFlag}
 	resp, err := client.RegisterUser(ctx, req)
@@ -20,7 +21,7 @@ func AddUser(ctx context.Context, client pb.GkeeperClient, username, password st
 	models.Sugar.Debugf("%+v", resp)
 	return
 }
-
+// Login Аутентификация 
 func Login(ctx context.Context, client pb.GkeeperClient, username, password string) (token string, err error) {
 	req := &pb.LoginRequest{Username: username, Password: password, Metadata: metaFlag}
 	resp, err := client.LoginUser(ctx, req)
@@ -39,7 +40,7 @@ func Login(ctx context.Context, client pb.GkeeperClient, username, password stri
 	}
 	return
 }
-
+// GetList Вывод на экран списка записей
 func GetList(ctx context.Context, client pb.GkeeperClient) (list []*pb.ObjectParams, err error) {
 	if token == "" {
 		return nil, errors.New("no token")

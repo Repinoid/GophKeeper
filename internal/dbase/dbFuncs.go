@@ -51,7 +51,7 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 	return
 }
 
-// AddUser запись нового юзера в таблицу
+// RemoveUser обнуление утратившего доверие юзера
 func (dataBase *DBstruct) RemoveUser(ctx context.Context, userName string) (err error) {
 
 	order := "DELETE FROM USERA WHERE username = $1 ;"
@@ -72,8 +72,8 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 	// That Row will error with ErrNoRows if no rows are returned.
 	err = row.Scan(&yes)
 	if !yes {
-		// хрень какая-то - если userName правильный, а password - неверный, err получается nil. Видимо, WHERE username= $1 только и 
-		// важен для sql.ErrNoRows
+		// хрень какая-то - если userName правильный, а password - неверный, err получается nil. 
+		// Видимо, WHERE username= $1 только и важен для sql.ErrNoRows
 		return sql.ErrNoRows
 	}
 

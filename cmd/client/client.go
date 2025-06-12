@@ -23,6 +23,14 @@ var (
 	currentUser = ""
 )
 
+// Глобальные переменные для флага компилляции.
+// Форма запуска go run -ldflags "-X main.buildVersion=v1.0.1 -X 'main.buildDate=$(date +'%Y/%m/%d')' -X main.buildCommit=comitta" main.go
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	ctx := context.Background()
 
@@ -33,6 +41,10 @@ func main() {
 	}
 	defer logger.Sync()
 	models.Sugar = *logger.Sugar()
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 
 	// connect & create tables local DB
 	localsql, err = localbase.ConnectToLocalDB(models.LocalSqlEndpoint)
@@ -229,6 +241,5 @@ func PingServer(conn *grpc.ClientConn) error {
 	}
 	return nil
 }
-
 
 // -putcard="5303 3131 5442 5748, 12/12, 567, john does" -meta="card ____"

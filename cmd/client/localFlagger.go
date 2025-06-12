@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 )
-
+// loginFlagLocal логин при недоступном сервере, в локальную базу
 func loginFlagLocal(loginFlag string) (err error) {
 	str := strings.ReplaceAll(loginFlag, " ", "")
 	args := strings.Split(str, ",")
@@ -28,7 +28,7 @@ func loginFlagLocal(loginFlag string) (err error) {
 	}
 	return
 }
-
+// listFlagLocal вывод списка записей из локальной базы
 func listFlagLocal() (err error) {
 	list, err := localbase.GetList(*localsql, strings.ToUpper(currentUser))
 	if err != nil {
@@ -43,7 +43,7 @@ func listFlagLocal() (err error) {
 	}
 	return
 }
-
+// showFlagLocal - вывод параметров записи с номером в showFlag
 func showFlagLocal(showFlag int32) (err error) {
 
 	by, err := localbase.GetRecordHead(*localsql, showFlag)
@@ -76,7 +76,7 @@ func showFlagLocal(showFlag int32) (err error) {
 
 	return
 }
-
+// getFileFlagLocal - скачивание файла из локального хранилища
 func getFileFlagLocal(getFileFlag int32) (err error) {
 
 	by, err := localbase.GetRecordHead(*localsql, getFileFlag)
