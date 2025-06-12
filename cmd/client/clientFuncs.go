@@ -5,10 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"strconv"
+	"time"
 
 	pb "gorsovet/cmd/proto"
 	"gorsovet/internal/models"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AddUser регистрация нового пользователя
@@ -21,13 +26,14 @@ func AddUser(ctx context.Context, client pb.GkeeperClient, username, password st
 	models.Sugar.Debugf("%+v", resp)
 	return
 }
-// Login Аутентификация 
+
+// Login Аутентификация
 func Login(ctx context.Context, client pb.GkeeperClient, username, password string) (token string, err error) {
 	req := &pb.LoginRequest{Username: username, Password: password, Metadata: metaFlag}
 	resp, err := client.LoginUser(ctx, req)
 	if err != nil {
 		return
-		
+
 	}
 	token = resp.GetToken()
 	if token == "" {
@@ -40,6 +46,7 @@ func Login(ctx context.Context, client pb.GkeeperClient, username, password stri
 	}
 	return
 }
+
 // GetList Вывод на экран списка записей
 func GetList(ctx context.Context, client pb.GkeeperClient) (list []*pb.ObjectParams, err error) {
 	if token == "" {
@@ -95,19 +102,45 @@ func receiveFile(stream pb.Gkeeper_GsenderClient) (chuvak *pb.SenderChunk, err e
 	if token == "" {
 		return nil, errors.New("no token")
 	}
-	// в первом куске помимо данных - параметры записи
+
 	chu := pb.SenderChunk{}
-	firstChunk, err := stream.Recv()
+
+	// Get the header (metadata)
+	header, err := stream.Header()
 	if err != nil {
-		models.Sugar.Debugf("stream.Recv()  %v", err)
-		return nil, err
+		log.Fatalf("failed to get header: %v", err)
 	}
-	chu.Content = firstChunk.GetContent()
-	chu.Filename = firstChunk.GetFilename()
-	chu.Metadata = firstChunk.GetMetadata()
-	chu.Size = firstChunk.GetSize()
-	chu.CreatedAt = firstChunk.GetCreatedAt()
-	chu.DataType = firstChunk.GetDataType()
+	// Read metadata values
+	if vals := header.Get("FileName"); len(vals) > 0 {
+		chu.Filename = vals[0]
+	}
+	if vals := header.Get("MetaData"); len(vals) > 0 {
+		chu.Metadata = vals[0]
+	}
+	if vals := header.Get("DataType"); len(vals) > 0 {
+		chu.DataType = vals[0]
+	}
+	if vals := header.Get("Size"); len(vals) > 0 {
+		i, _ := strconv.Atoi(vals[0])
+		chu.Size = int32(i)
+	}
+	if vals := header.Get("CreatedAt"); len(vals) > 0 {
+		t, _ := time.Parse(time.RFC3339, vals[0])
+		chu.CreatedAt = timestamppb.New(t)
+	}
+
+	// в первом куске помимо данных - параметры записи
+	// firstChunk, err := stream.Recv()
+	// if err != nil {
+	// 	models.Sugar.Debugf("stream.Recv()  %v", err)
+	// 	return nil, err
+	// }
+	// chu.Content = firstChunk.GetContent()
+	// chu.Filename = firstChunk.GetFilename()
+	// chu.Metadata = firstChunk.GetMetadata()
+	// chu.Size = firstChunk.GetSize()
+	// chu.CreatedAt = firstChunk.GetCreatedAt()
+	// chu.DataType = firstChunk.GetDataType()
 
 	// Process subsequent chunks
 	for {

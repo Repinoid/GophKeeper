@@ -2,25 +2,27 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"gorsovet/internal/dbase"
 	"gorsovet/internal/minios3"
 	"gorsovet/internal/models"
 	"gorsovet/internal/privacy"
 	"io"
+	"strconv"
+	"time"
 
 	pb "gorsovet/cmd/proto"
 
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 // Gsender - send данных из сервера в клиент
 func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_GsenderServer) (err error) {
-	ctx := context.Background()
-	//response := pb.RemoveObjectsResponse{Success: false, Reply: "Could not get objects"}
+
+	ctx := stream.Context()
 
 	db, err := dbase.ConnectToDB(ctx, models.DBEndPoint)
 	if err != nil {
@@ -78,22 +80,41 @@ func (gk *GkeeperService) Gsender(req *pb.SenderRequest, stream pb.Gkeeper_Gsend
 		return
 	}
 
+	// Конвертируем в time.Time
+	t := param.GetCreatedAt().AsTime()
+
+	md := metadata.Pairs(
+		"FileName", param.GetFileurl(),
+		"MetaData", param.GetMetadata(),
+		"DataType", param.DataType,
+		"Size", strconv.Itoa(int(param.GetSize())),
+		"CreatedAt", t.Format(time.RFC3339),
+	)
+	// Set then Send md
+	// Send without Set - does not work
+	if err := stream.SetHeader(md); err != nil {
+		return err
+	}
+	if err := stream.SendHeader(md); err != nil {
+		return err
+	}
+
 	// Create a buffer to hold chunks
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
 	reader := bytes.NewReader(fileBytes)
 
-	// Send first chunk with filename etc
-	firstChunk := &pb.SenderChunk{Filename: param.GetFileurl(), Metadata: param.GetMetadata(),
-		DataType: param.DataType, Size: param.GetSize(), CreatedAt: param.GetCreatedAt()}
-	n, err := reader.Read(buffer)
-	if err != nil && err != io.EOF {
-		return
-	}
-	firstChunk.Content = buffer[:n]
-	if err = stream.Send(firstChunk); err != nil {
-		return
-	}
+	// // Send first chunk with filename etc
+	// firstChunk := &pb.SenderChunk{Filename: param.GetFileurl(), Metadata: param.GetMetadata(),
+	// 	DataType: param.DataType, Size: param.GetSize(), CreatedAt: param.GetCreatedAt()}
+	// n, err := reader.Read(buffer)
+	// if err != nil && err != io.EOF {
+	// 	return
+	// }
+	// firstChunk.Content = buffer[:n]
+	// if err = stream.Send(firstChunk); err != nil {
+	// 	return
+	// }
 
 	for {
 		bytesRead, err := reader.Read(buffer)

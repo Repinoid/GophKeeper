@@ -12,6 +12,7 @@
             "program": "${fileDirname}",
             "args": [
                 //-puttext="qwerty text" -meta="meta 1"
+                "-get=5",
              //   "-list",
              //   "-puttext=cli   user  ,  pa/[]ss ",
                 //"-meta= cli  meta ",
