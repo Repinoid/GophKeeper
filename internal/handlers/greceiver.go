@@ -26,7 +26,8 @@ func (gk *GkeeperService) Greceiver(stream pb.Gkeeper_GreceiverServer) (err erro
 
 	// считываем параметры потока из заголовка
 	ctx := stream.Context()
-	md, ok := metadata.FromIncomingContext(stream.Context())
+//	md, ok := metadata.FromIncomingContext(stream.Context())
+	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		values := md.Get("Token")
 		if len(values) == 0 {

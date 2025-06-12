@@ -5,7 +5,7 @@ import (
 	_ "net/http/pprof"
 )
 
-func (suite *TstHand) Test07List() {
+func (suite *TstHand) Test08List() {
 	// Создаем тестовый запрос
 	req := &pb.ListObjectsRequest{Token: suite.token}
 	resp, err := suite.serv.ListObjects(suite.ctx, req)
@@ -22,7 +22,7 @@ func (suite *TstHand) Test07List() {
 	suite.Require().Error(err)
 	suite.Require().False(resp.Success)
 }
-func (suite *TstHand) Test08_Remove() {
+func (suite *TstHand) Test09_Remove() {
 	// запрос на удаление объекта номер 1
 	req := &pb.RemoveObjectsRequest{Token: suite.token, ObjectId: 1}
 	resp, err := suite.serv.RemoveObjects(suite.ctx, req)

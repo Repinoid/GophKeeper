@@ -56,7 +56,7 @@ func (m *MockSendStream) SetHeader(metadata.MD) error {
 func (m *MockSendStream) SetTrailer(metadata.MD) {
 }
 
-func (suite *TstHand) Test09Gsender() {
+func (suite *TstHand) Test10Gsender() {
 
 	server := suite.serv
 

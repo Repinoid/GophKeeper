@@ -131,6 +131,8 @@ func (suite *TstBase) SetupSuite() { // выполняется перед тес
 	//endpoint := fmt.Sprintf("%s:%s", host, port.Port())
 	endpoint, err := minioContainer.Endpoint(suite.ctx, "")
 	suite.Require().NoError(err)
+	// переназначаем путь к ключу, по умолсению в models.PublicCrt запуск из cmd/client
+	models.PublicCrt = "../../cmd/tls/public.crt"
 	suite.minioClient, err = minios3.ConnectToS3(endpoint, "minioadmin", "minioadmin")
 	suite.Require().NoError(err)
 	// клиент для функций минио в models.MinioClient

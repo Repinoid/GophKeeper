@@ -1,28 +1,35 @@
 package handlers
 
 import (
-	pb "gorsovet/cmd/proto"
 	_ "net/http/pprof"
 	"os"
 
 	"gorsovet/internal/models"
+
+	"google.golang.org/grpc/metadata"
 )
 
 func (suite *TstHand) Test04GreceiverText() {
 
 	server := suite.serv
+	text := []byte("text to send to greceiver")
+	md := metadata.Pairs(
+		"Token", suite.token,
+		"MetaData", "metta lurg",
+		"DataType", "text",
+		"ObjectId", "0",
+		"FileName", "client.txt",
+	)
+	ctx := metadata.NewOutgoingContext(suite.ctx, md)
 
-	text := "text to send to greceiver"
-
-	firstChunk := &pb.ReceiverChunk{Filename: "fname.test", Token: suite.token, Metadata: "meta test", DataType: "text", ObjectId: 0}
-	firstChunk.Content = []byte(text)
-
-	mockStream, err := makeMockStream(suite.ctx, firstChunk)
+	mockStream, err := makeMockStream(ctx, text)
 	suite.Require().NoError(err)
+
+	//mockStream
 
 	err = server.Greceiver(mockStream)
 	suite.Require().NoError(err)
-
+	// успешный засыл текстовой записи
 }
 func (suite *TstHand) Test05GreceiverFile() {
 
@@ -32,16 +39,20 @@ func (suite *TstHand) Test05GreceiverFile() {
 	if err != nil {
 		return
 	}
-
-	firstChunk := &pb.ReceiverChunk{Filename: "client.binary", Token: suite.token, Metadata: "meta client file", DataType: "file", ObjectId: 0}
-	firstChunk.Content = fileBy
-
-	mockStream, err := makeMockStream(suite.ctx, firstChunk)
+	md := metadata.Pairs(
+		"Token", suite.token,
+		"MetaData", "metta lurg",
+		"DataType", "file",
+		"ObjectId", "0",
+		"FileName", "client.binary",
+	)
+	suite.ctx = metadata.NewOutgoingContext(suite.ctx, md)
+	mockStream, err := makeMockStream(suite.ctx, fileBy)
 	suite.Require().NoError(err)
 
 	err = server.Greceiver(mockStream)
 	suite.Require().NoError(err)
-
+	// успешный засыл записи - файла. теперь 2 записи в базах и Minio
 }
 func (suite *TstHand) Test06Greceiver_NoBase() {
 	// save endpoint
@@ -50,12 +61,18 @@ func (suite *TstHand) Test06Greceiver_NoBase() {
 
 	server := suite.serv
 
-	text := "wrong db endpoint"
+	text := []byte("wrong db endpoint")
 
-	firstChunk := &pb.ReceiverChunk{Filename: "client.binary", Token: suite.token, Metadata: "meta client file", DataType: "file", ObjectId: 0}
-	firstChunk.Content = []byte(text)
+	md := metadata.Pairs(
+		"Token", suite.token,
+		"MetaData", "metta lurg",
+		"DataType", "text",
+		"ObjectId", "0",
+		"FileName", "doesnot.matter",
+	)
+	suite.ctx = metadata.NewOutgoingContext(suite.ctx, md)
 
-	mockStream, err := makeMockStream(suite.ctx, firstChunk)
+	mockStream, err := makeMockStream(suite.ctx, text)
 	suite.Require().NoError(err)
 
 	err = server.Greceiver(mockStream)
@@ -64,22 +81,30 @@ func (suite *TstHand) Test06Greceiver_NoBase() {
 
 	// return endpoint
 	models.DBEndPoint = niceEnd
+	// ничего не изменилось в базе
 
 }
 func (suite *TstHand) Test07Greceiver_BadToken() {
 	// save endpoint
 
+	// server := suite.serv
+	// text := "wrong token"
+
 	server := suite.serv
-
-	text := "wrong token"
-
-	firstChunk := &pb.ReceiverChunk{Filename: "client.binary", Token: suite.token + "baddy", Metadata: "meta client file", DataType: "file", ObjectId: 0}
-	firstChunk.Content = []byte(text)
-
-	mockStream, err := makeMockStream(suite.ctx, firstChunk)
+	text := []byte("wrong token")
+	md := metadata.Pairs(
+		"Token", suite.token+"baddy",
+		"MetaData", "metta lurg",
+		"DataType", "text",
+		"ObjectId", "0",
+		"FileName", "ugly.bad",
+	)
+	suite.ctx = metadata.NewOutgoingContext(suite.ctx, md)
+	mockStream, err := makeMockStream(suite.ctx, text)
 	suite.Require().NoError(err)
 
 	err = server.Greceiver(mockStream)
 	suite.Require().Error(err)
+
 	suite.Require().EqualError(err, "no rows in result set")
 }

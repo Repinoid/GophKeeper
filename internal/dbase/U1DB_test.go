@@ -20,12 +20,6 @@ func (suite *TstBase) Test00InitDB() {
 			dbe:     suite.DBEndPoint + "a",
 			wantErr: true,
 		},
-		// {
-		// 	name:       "Bad PASSWORD",
-		// 	ctx:        context.Background(),
-		// 	dbEndPoint: "postgres://testuser:testpassbad@localhost:5432/testdb",
-		// 	wantErr:    true,
-		// },
 		{
 			name:    "InitDB Grace manner", // last - RIGHT base params. чтобы база была открыта для дальнейших тестов
 			ctx:     context.Background(),
@@ -65,19 +59,19 @@ func (suite *TstBase) Test02AddCheckUser() {
 
 	err = db.AddUser(suite.ctx, "userName", "password", "metaData")
 	suite.Require().NoError(err)
-	yes := db.CheckUserPassword(suite.ctx, "userName", "password")
-	suite.Require().True(yes)
+	err = db.CheckUserPassword(suite.ctx, "userName", "password")
+	suite.Require().NoError(err)
 	// wrong user
-	yes = db.CheckUserPassword(suite.ctx, "userNames", "password")
-	suite.Require().False(yes)
+	err = db.CheckUserPassword(suite.ctx, "userNames", "password")
+	suite.Require().Error(err)
 	// wrong password
-	yes = db.CheckUserPassword(suite.ctx, "userName", "passwordas")
-	suite.Require().False(yes)
-	yes, _ = db.IfUserExists(suite.ctx, "userName")
-	suite.Require().True(yes)
+	err = db.CheckUserPassword(suite.ctx, "userName", "passwordas")
+	suite.Require().Error(err)
+	_, err = db.IfUserExists(suite.ctx, "userName")
+	suite.Require().NoError(err)
 	// this user does not exist
-	yes, _ = db.IfUserExists(suite.ctx, "userNames")
-	suite.Require().False(yes)
+	_, err = db.IfUserExists(suite.ctx, "userNames")
+	suite.Require().Error(err)
 
 	db.CloseBase()
 }

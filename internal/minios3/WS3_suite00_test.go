@@ -109,6 +109,8 @@ func (suite *TstS3) SetupSuite() { // выполняется перед тест
 	//endpoint := fmt.Sprintf("%s:%s", host, port.Port())
 	endpoint, err := minioContainer.Endpoint(suite.ctx, "")
 	suite.Require().NoError(err)
+	// тесты запускаются из /internal/minioS3. Поэтому надо подняться на пару этажей выше и нырнуть в cmd/tls/
+	models.PublicCrt = "../../cmd/tls/public.crt"
 	suite.minioClient, err = ConnectToS3(endpoint, "minioadmin", "minioadmin")
 	suite.Require().NoError(err)
 	// ***************** MINIO part end ************************************

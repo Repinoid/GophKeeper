@@ -20,7 +20,7 @@ import (
 
 var (
 	testBucketName = "testbucket"
-	testFileName   = "mi.goo"
+	testFileName   = "testfile.binary"
 )
 
 func (suite *TstS3) Test01Crypt() {
@@ -155,7 +155,7 @@ func (suite *TstS3) Test04WriteReadBytes() {
 }
 func (suite *TstS3) Test04WriteReadFile() {
 
-	localFile := "./mi.goo"
+	localFile := "testfile.binary"
 	s3File := "go1.sum"
 
 	_, err := S3PutFile(suite.ctx, suite.minioClient, testBucketName, s3File, localFile, suite.sse)

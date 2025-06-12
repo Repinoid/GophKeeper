@@ -45,7 +45,6 @@ func (gk *GkeeperService) ListObjects(ctx context.Context, req *pb.ListObjectsRe
 		response.Reply = "bad GetUserNameByToken"
 		models.Sugar.Debugln(err)
 		return &response, status.Errorf(codes.Unauthenticated, "%s %v", response.Reply, err)
-
 	}
 
 	response.Listing, err = db.GetObjectsList(ctx, username)

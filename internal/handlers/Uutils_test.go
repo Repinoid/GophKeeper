@@ -3,9 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"errors"
 	pb "gorsovet/cmd/proto"
-	"gorsovet/internal/models"
 	"io"
 
 	"google.golang.org/grpc/metadata"
@@ -25,7 +23,11 @@ type MockClientStream struct {
 }
 
 func (m *MockClientStream) Context() context.Context {
-	return m.Ctx
+	// без этого трюка, просто с metadata.NewOutgoingContext метаданные 
+	// прописываются только куда то вглубь, FromIncomingContext на сервере их не видит
+	inMd, _ := metadata.FromOutgoingContext(m.Ctx)
+	ctx := metadata.NewIncomingContext(m.Ctx, inMd)
+	return ctx
 }
 func (m *MockClientStream) Recv() (a *pb.ReceiverChunk, err error) {
 	if m.currentRecv >= len(m.recvMsgs) {
@@ -53,28 +55,13 @@ func (m *MockClientStream) SetHeader(metadata.MD) error {
 func (m *MockClientStream) SetTrailer(metadata.MD) {
 }
 
-func makeMockStream(ctx context.Context, data *pb.ReceiverChunk) (mockStream *MockClientStream, err error) {
+func makeMockStream(ctx context.Context, data []byte) (mockStream *MockClientStream, err error) {
 
-	// data.Content - ALL data to send
-	content := make([]byte, len(data.Content))
-	// make copy of data.Content, т.к. потом это поле будет перезаписываться
-	n := copy(content, data.Content)
-	if n != len(data.Content) {
-		models.Sugar.Debugln("не перекопировалось полностью")
-		return nil, errors.New("не перекопировалось")
-	}
-	reader := bytes.NewReader(data.Content)
+	reader := bytes.NewReader(data)
 	buffer := make([]byte, 64*1024) // 64KB chunks
 
 	// Send first chunk with filename
-	firstChunk := data
-	n, err = reader.Read(buffer)
-	if err != nil && err != io.EOF {
-		return
-	}
-	firstChunk.Content = buffer[:n]
 	msgs := []*pb.ReceiverChunk{}
-	msgs = append(msgs, firstChunk)
 
 	// Send remaining chunks
 	for {

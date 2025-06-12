@@ -44,7 +44,7 @@ func (gk *GkeeperService) RegisterUser(ctx context.Context, req *pb.RegisterRequ
 		response.Reply = "Empty username or password"
 		return &response, status.Error(codes.InvalidArgument, response.Reply)
 	}
-	// username - only latins & digits
+	// username - only latins & digits и по заветам S3 длина имени бакета не более 2**6
 	if !regexp.MustCompile(`^[a-zA-Z\d]+$`).MatchString(userName) || len(userName) > 64 {
 		response.Success = false
 		response.Reply = "Username - latin symbols & digits"

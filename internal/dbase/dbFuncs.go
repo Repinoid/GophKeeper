@@ -1,6 +1,7 @@
 package dbase
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -70,6 +71,11 @@ func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, passw
 	// Any error that occurs while querying is deferred until calling Scan on the returned Row.
 	// That Row will error with ErrNoRows if no rows are returned.
 	err = row.Scan(&yes)
+	if !yes {
+		// хрень какая-то - если userName правильный, а password - неверный, err получается nil. Видимо, WHERE username= $1 только и 
+		// важен для sql.ErrNoRows
+		return sql.ErrNoRows
+	}
 
 	return
 }
