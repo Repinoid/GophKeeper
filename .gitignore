@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 *.key
 *.pem
 *.crt
@@ -12,8 +11,6 @@ xl*
 *.file
 *.txt
 localS3/
-server
-client
 
 vaultage/vault/
 vault/backend/
@@ -37,11 +34,8 @@ terraform/
 *.dylib
 *.txt
 t*.bat
-*.pem
-*.key
 
 dbaser/
-certs/
 
 # Test binary, built with `go test -c`
 *.test
@@ -50,15 +44,12 @@ certs/
 *.out
 
 # Binaries
-#cmd/agent/main
-#cmd/agent/agent
-#cmd/server/main
-#cmd/server/server
+cmd/client/main
+cmd/client/client
+cmd/server/main
+cmd/server/server
 
 # Dependency directories (remove the comment below to include it)
 vendor/
 
-# IDEs directories
-.idea
-.vscode
->>>>>>> origin/main
+

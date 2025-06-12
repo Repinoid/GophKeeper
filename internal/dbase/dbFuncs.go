@@ -20,19 +20,11 @@ import (
 )
 
 // AddUser запись нового юзера в таблицу
-func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaData string) error {
-	db := dataBase.DB
-
-	// транзакция - рудiмент от прошлого проекта, когда данные вносились в пару таблиц. если по итогу ничего не изменится - сверну в простой db.Exec
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("error db.Begin  %w", err)
-	}
-	defer tx.Rollback(ctx)
+func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaData string) (err error) {
 
 	// генерируем ключ бакета
 	bucketKey := make([]byte, 32)
-	if _, err = rand.Read(bucketKey); err != nil {
+	if _, err := rand.Read(bucketKey); err != nil {
 		return err
 	}
 	// кодируем ключ бакета мастер-ключом
@@ -49,59 +41,54 @@ func (dataBase *DBstruct) AddUser(ctx context.Context, userName, password, metaD
 	// переводим имя в капслок, имя бакета в нижний регистр
 	userName = strings.ToUpper(userName)
 	bucketname := strings.ToLower(userName)
+
 	order := "INSERT INTO USERA(username, password, bucketname, bucketkey, metadata) VALUES ($1, crypt($2, gen_salt('md5')), $3, $4, $5) ;"
-	_, err = tx.Exec(ctx, order, userName, password, bucketname, bucketKeyHex, metaData)
+	_, err = dataBase.DB.Exec(ctx, order, userName, password, bucketname, bucketKeyHex, metaData)
 	if err != nil {
 		return fmt.Errorf("add user error is %w", err)
 	}
-	return tx.Commit(ctx)
+	return
 }
 
 // AddUser запись нового юзера в таблицу
 func (dataBase *DBstruct) RemoveUser(ctx context.Context, userName string) (err error) {
-	db := dataBase.DB
 
 	order := "DELETE FROM USERA WHERE username = $1 ;"
-	_, err = db.Exec(ctx, order, strings.ToUpper(userName))
+	_, err = dataBase.DB.Exec(ctx, order, strings.ToUpper(userName))
 	if err != nil {
 		return fmt.Errorf("delete user error is %w", err)
 	}
 	return
 }
 
-func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, password string) (yes bool) {
+func (dataBase *DBstruct) CheckUserPassword(ctx context.Context, userName, password string) (err error) {
 	userName = strings.ToUpper(userName)
-	db := dataBase.DB
+
 	order := "SELECT (crypt($2, password) = password) FROM USERA WHERE username= $1 ;"
-	row := db.QueryRow(ctx, order, userName, password) // password here - what was entered
-	//	var yes bool
+	row := dataBase.DB.QueryRow(ctx, order, userName, password) // password here - what was entered
+	var yes bool
 	// Any error that occurs while querying is deferred until calling Scan on the returned Row.
 	// That Row will error with ErrNoRows if no rows are returned.
-	err := row.Scan(&yes)
-	if err != nil {
-		return false
-	}
+	err = row.Scan(&yes)
+
 	return
 }
 
-// IfUserExists возвращает да или нет и id юзера
-func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (yes bool, uId int32) {
+// IfUserExists возвращает id юзера и ошибку ErrNoRows если такого юзера нет
+func (dataBase *DBstruct) IfUserExists(ctx context.Context, userName string) (uId int32, err error) {
 	userName = strings.ToUpper(userName)
-	db := dataBase.DB
 	order := "SELECT userId from USERA WHERE username = $1 ;"
-	row := db.QueryRow(ctx, order, userName) // password here - what was entered
-	//var uId int
-	err := row.Scan(&uId)
-	return err == nil, uId
+	row := dataBase.DB.QueryRow(ctx, order, userName) // password here - what was entered
+	err = row.Scan(&uId)
+	return
 }
 
 // PutToken to TOKENA table, with metadata
 func (dataBase *DBstruct) PutToken(ctx context.Context, userName, token, metadata string) (err error) {
 	userName = strings.ToUpper(userName)
-	db := dataBase.DB
 
 	order := "INSERT INTO TOKENA(userName, token, metadata) VALUES ($1, $2, $3) ;"
-	_, err = db.Exec(ctx, order, userName, token, metadata)
+	_, err = dataBase.DB.Exec(ctx, order, userName, token, metadata)
 
 	return
 }
@@ -140,7 +127,7 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, us
 		defer tx.Rollback(ctx)
 
 		// определяем прежнее имя файла в S3
-		order = "SELECT fileURL from DATAS WHERE username = $1 AND id = $2 ;"
+		order = "SELECT fileURL from DATAS WHERE username = $1 AND id = $2 FOR UPDATE ;"
 		row := tx.QueryRow(ctx, order, username, object_id)
 		urla := ""
 		err = row.Scan(&urla)
@@ -149,7 +136,7 @@ func (dataBase *DBstruct) PutFileParams(ctx context.Context, object_id int32, us
 		}
 		// получить имя бакета, может быть иным чем юзернейм
 		bucketName := ""
-		order = "SELECT bucketname from USERA WHERE username =  $1 ;"
+		order = "SELECT bucketname from USERA WHERE username =  $1 FOR UPDATE ;"
 		row = tx.QueryRow(ctx, order, username)
 		err = row.Scan(&bucketName)
 		if err != nil {
@@ -188,7 +175,10 @@ func (dataBase *DBstruct) RemoveObjects(ctx context.Context, username string, id
 	}
 	defer tx.Rollback(ctx)
 
-	order := "SELECT fileURL from DATAS WHERE username = $1 AND id = $2 ;"
+	// from code review - Или вообще не проверять, а сразу удалять. Тогда транзакция тоже не нужна.
+	// - не получится, т.к. нужно определить имя файла для последующего удаления в S3, возвращается в urla
+
+	order := "SELECT fileURL from DATAS WHERE username = $1 AND id = $2 FOR UPDATE ;"
 	row := tx.QueryRow(ctx, order, username, id)
 	urla := ""
 	err = row.Scan(&urla)
@@ -240,7 +230,7 @@ func (dataBase *DBstruct) GetObjectIdParams(ctx context.Context, username string
 
 	order := "SELECT fileURL, filekey, datatype, metadata, filesize, user_created_at from DATAS WHERE username = $1 AND id = $2 ORDER BY user_created_at ;"
 	row := dataBase.DB.QueryRow(ctx, order, username, id)
-	// для скана времени - напрямую в струкруту не получается
+	// для скана времени - напрямую в структуру не получается
 	var pgTime time.Time
 	err = row.Scan(&obj.Fileurl, &obj.Filekey, &obj.DataType, &obj.Metadata, &obj.Size, &pgTime)
 	obj.CreatedAt = timestamppb.New(pgTime)
